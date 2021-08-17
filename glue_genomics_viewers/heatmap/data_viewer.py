@@ -42,7 +42,7 @@ class HeatmapViewer(MatplotlibImageMixin, MatplotlibDataViewer):
              'select:yrange', 'image:point_selection', 'image:contrast_bias']
 
     def __init__(self, session, parent=None, state=None):
-        MatplotlibDataViewer.__init__(self, session, wcs=False, parent=parent, state=state)
+        MatplotlibDataViewer.__init__(self, session, wcs=True, parent=parent, state=state)
         MatplotlibImageMixin.setup_callbacks(self)
 
     def closeEvent(self, *args):
