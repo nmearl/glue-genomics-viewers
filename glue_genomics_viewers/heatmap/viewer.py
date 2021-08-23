@@ -35,28 +35,26 @@ ax.coords[{y_att_axis}].set_ticklabel(size={y_ticklabel_size})
 """.strip()
 
 
-class MatplotlibImageMixin(object):
+class MatplotlibHeatmapMixin(object):
 
     def setup_callbacks(self):
         self._wcs_set = False
         self._changing_slice_requires_wcs_update = None
         self.axes.set_adjustable('datalim')
-        self.state.add_callback('x_att', self._set_wcs)
-        self.state.add_callback('y_att', self._set_wcs)
-        self.state.add_callback('slices', self._on_slice_change)
-        self.state.add_callback('reference_data', self._set_wcs)
+        #self.state.add_callback('x_att')
+        #self.state.add_callback('y_att')
+        #self.state.add_callback('slices') #probably we don't need this
+        #self.state.add_callback('reference_data') # probably we don't need this
         self.axes._composite = CompositeArray()
         self.axes._composite_image = imshow(self.axes, self.axes._composite, aspect='auto',
                                             origin='lower', interpolation='nearest')
-        self._set_wcs()
-
     def update_x_ticklabel(self, *event):
         # We need to overload this here for WCSAxes
         if hasattr(self, '_wcs_set') and self._wcs_set and self.state.x_att is not None:
             axis = self.state.reference_data.ndim - self.state.x_att.axis - 1
         else:
             axis = 0
-        self.axes.coords[axis].set_ticklabel(size=self.state.x_ticklabel_size)
+        self.axes.coords[axis].set_ticklabel(size=self.state.x_ticklabel_size) #self.axes is an astropy thing. Setting WCS=False gets here, which crashes
         self.redraw()
 
     def update_y_ticklabel(self, *event):
@@ -79,62 +77,9 @@ class MatplotlibImageMixin(object):
         self.axes.figure.canvas.draw_idle()
 
     def add_data(self, data):
-        result = super(MatplotlibImageMixin, self).add_data(data)
-        # If this is the first layer (or the first after all layers were)
-        # removed, set the WCS for the axes.
-        if len(self.layers) == 1:
-            self._set_wcs()
+        result = super(MatplotlibHeatmapMixin, self).add_data(data)
         return result
 
-    def _on_slice_change(self, event=None):
-        if self._changing_slice_requires_wcs_update:
-            self._set_wcs(event=event, relim=False)
-
-    def _set_wcs(self, event=None, relim=True):
-
-        if self.state.x_att is None or self.state.y_att is None or self.state.reference_data is None:
-            return
-
-        ref_coords = getattr(self.state.reference_data, 'coords', None)
-
-        if ref_coords is None or isinstance(ref_coords, LegacyCoordinates):
-            self.axes.reset_wcs(slices=self.state.wcsaxes_slice,
-                                wcs=get_identity_wcs(self.state.reference_data.ndim))
-        else:
-            self.axes.reset_wcs(slices=self.state.wcsaxes_slice, wcs=ref_coords)
-
-        # Reset the axis labels to match the fact that the new axes have no labels
-        self.state.x_axislabel = ''
-        self.state.y_axislabel = ''
-
-        self._update_appearance_from_settings()
-        self._update_axes()
-
-        self.update_x_ticklabel()
-        self.update_y_ticklabel()
-
-        if relim:
-            self.state.reset_limits()
-
-        # Determine whether changing slices requires changing the WCS
-        if ref_coords is None or type(ref_coords) == Coordinates:
-            self._changing_slice_requires_wcs_update = False
-        else:
-            ix = self.state.x_att.axis
-            iy = self.state.y_att.axis
-            x_dep = list(dependent_axes(ref_coords, ix))
-            y_dep = list(dependent_axes(ref_coords, iy))
-            if ix in x_dep:
-                x_dep.remove(ix)
-            if iy in x_dep:
-                x_dep.remove(iy)
-            if ix in y_dep:
-                y_dep.remove(ix)
-            if iy in y_dep:
-                y_dep.remove(iy)
-            self._changing_slice_requires_wcs_update = bool(x_dep or y_dep)
-
-        self._wcs_set = True
 
     def apply_roi(self, roi, override_mode=None):
 

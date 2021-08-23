@@ -16,13 +16,13 @@ from glue.utils import defer_draw, decorate_all_methods
 #from .qt.contrast_mouse_mode import ContrastBiasMode  # noqa
 #from .qt.pixel_selection_mode import PixelSelectionTool  # noqa
 
-from .viewer import MatplotlibImageMixin
+from .viewer import MatplotlibHeatmapMixin
 
 __all__ = ['ImageHeatmapViewer']
 
 
 @decorate_all_methods(defer_draw)
-class HeatmapViewer(MatplotlibImageMixin, MatplotlibDataViewer):
+class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):
 
     LABEL = 'Heatmap'
     _default_mouse_mode_cls = RoiClickAndDragMode
@@ -43,7 +43,7 @@ class HeatmapViewer(MatplotlibImageMixin, MatplotlibDataViewer):
 
     def __init__(self, session, parent=None, state=None):
         MatplotlibDataViewer.__init__(self, session, wcs=True, parent=parent, state=state)
-        MatplotlibImageMixin.setup_callbacks(self)
+        MatplotlibHeatmapMixin.setup_callbacks(self)
 
     def closeEvent(self, *args):
         super(HeatmapViewer, self).closeEvent(*args)
