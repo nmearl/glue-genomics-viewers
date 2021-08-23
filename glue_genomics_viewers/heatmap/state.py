@@ -13,60 +13,10 @@ from echo import delay_callback
 from glue.core.data_combo_helper import ManualDataComboHelper, ComponentIDComboHelper
 from glue.core.exceptions import IncompatibleDataException
 
-__all__ = ['ImageViewerState', 'ImageLayerState', 'ImageSubsetLayerState', 'AggregateSlice']
+__all__ = ['HeatmapVewerState', 'ImageLayerState', 'ImageSubsetLayerState', 'AggregateSlice']
 
 
-def get_sliced_data_maker(x_axis=None, y_axis=None, slices=None, data=None,
-                          target_cid=None, reference_data=None, transpose=False):
-    """
-    Convenience function for use in exported Python scripts.
-    """
-
-    if reference_data is None:
-        reference_data = data
-
-    def get_array(bounds=None):
-
-        full_bounds = list(slices)
-        full_bounds[y_axis] = bounds[0]
-        full_bounds[x_axis] = bounds[1]
-
-        if isinstance(data, BaseData):
-            array = data.compute_fixed_resolution_buffer(full_bounds, target_data=reference_data,
-                                                         target_cid=target_cid, broadcast=False)
-        else:
-            array = data.data.compute_fixed_resolution_buffer(full_bounds, target_data=reference_data,
-                                                              subset_state=data.subset_state, broadcast=False)
-
-        if transpose:
-            array = array.transpose()
-
-        return array
-
-    return get_array
-
-
-class AggregateSlice(object):
-
-    def __init__(self, slice=None, center=None, function=None):
-        self.slice = slice
-        self.center = center
-        self.function = function
-
-    def __gluestate__(self, context):
-        state = dict(slice=context.do(self.slice),
-                     center=self.center,
-                     function=context.do(self.function))
-        return state
-
-    @classmethod
-    def __setgluestate__(cls, rec, context):
-        return cls(slice=context.object(rec['slice']),
-                   center=rec['center'],
-                   function=context.object(rec['function']))
-
-
-class ImageViewerState(MatplotlibDataViewerState):
+class HeatmapViewerState(MatplotlibDataViewerState):
     """
     A state class that includes all the attributes for an image viewer.
     """
@@ -95,7 +45,7 @@ class ImageViewerState(MatplotlibDataViewerState):
 
     def __init__(self, **kwargs):
 
-        super(ImageViewerState, self).__init__()
+        super(HeatmapViewerState, self).__init__()
 
         self.limits_cache = {}
 
@@ -121,10 +71,10 @@ class ImageViewerState(MatplotlibDataViewerState):
         self.add_callback('y_att_world', self._on_yatt_world_change, priority=1000)
 
         aspect_display = {'equal': 'Square Pixels', 'auto': 'Automatic'}
-        ImageViewerState.aspect.set_choices(self, ['equal', 'auto'])
-        ImageViewerState.aspect.set_display_func(self, aspect_display.get)
+        HeatmapViewerState.aspect.set_choices(self, ['auto', 'equal'])
+        HeatmapViewerState.aspect.set_display_func(self, aspect_display.get)
 
-        ImageViewerState.color_mode.set_choices(self, ['Colormaps', 'One color per layer'])
+        HeatmapViewerState.color_mode.set_choices(self, ['Colormaps', 'One color per layer'])
 
         self.update_from_dict(kwargs)
 

@@ -1,7 +1,5 @@
 import os
 
-from astropy.wcs import WCS
-
 from glue.core.subset import roi_to_subset_state
 from glue.core.coordinates import Coordinates, LegacyCoordinates
 from glue.core.coordinate_helpers import dependent_axes
@@ -13,18 +11,7 @@ from glue.viewers.image.compat import update_image_viewer_state
 from glue.viewers.image.frb_artist import imshow
 from glue.viewers.image.composite_array import CompositeArray
 
-__all__ = ['MatplotlibImageMixin']
-
-
-def get_identity_wcs(naxis):
-
-    wcs = WCS(naxis=naxis)
-    wcs.wcs.ctype = ['X'] * naxis
-    wcs.wcs.crval = [0.] * naxis
-    wcs.wcs.crpix = [1.] * naxis
-    wcs.wcs.cdelt = [1.] * naxis
-
-    return wcs
+__all__ = ['MatplotlibHeatmapMixin']
 
 
 EXTRA_FOOTER = """
@@ -41,29 +28,29 @@ class MatplotlibHeatmapMixin(object):
         self._wcs_set = False
         self._changing_slice_requires_wcs_update = None
         self.axes.set_adjustable('datalim')
-        #self.state.add_callback('x_att')
+        #self.state.add_callback('x_att') #We do need these callbacks... see ._on_attribute_change() here http://docs.glueviz.org/en/stable/customizing_guide/matplotlib_qt_viewer.html Used to be _set_wcs
         #self.state.add_callback('y_att')
         #self.state.add_callback('slices') #probably we don't need this
         #self.state.add_callback('reference_data') # probably we don't need this
         self.axes._composite = CompositeArray()
         self.axes._composite_image = imshow(self.axes, self.axes._composite, aspect='auto',
                                             origin='lower', interpolation='nearest')
-    def update_x_ticklabel(self, *event):
+    def bad_update_x_ticklabel(self, *event):
         # We need to overload this here for WCSAxes
         if hasattr(self, '_wcs_set') and self._wcs_set and self.state.x_att is not None:
             axis = self.state.reference_data.ndim - self.state.x_att.axis - 1
         else:
             axis = 0
-        self.axes.coords[axis].set_ticklabel(size=self.state.x_ticklabel_size) #self.axes is an astropy thing. Setting WCS=False gets here, which crashes
+        #self.axes.coords[axis].set_ticklabel(size=self.state.x_ticklabel_size) #self.axes is an astropy thing. Setting WCS=False gets here, which crashes
         self.redraw()
 
-    def update_y_ticklabel(self, *event):
+    def bad_update_y_ticklabel(self, *event):
         # We need to overload this here for WCSAxes
         if hasattr(self, '_wcs_set') and self._wcs_set and self.state.y_att is not None:
             axis = self.state.reference_data.ndim - self.state.y_att.axis - 1
         else:
             axis = 1
-        self.axes.coords[axis].set_ticklabel(size=self.state.y_ticklabel_size)
+        #self.axes.coords[axis].set_ticklabel(size=self.state.y_ticklabel_size)
         self.redraw()
 
     def _update_axes(self, *args):

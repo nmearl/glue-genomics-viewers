@@ -9,7 +9,6 @@ from glue.viewers.image.qt.layer_style_editor_subset import ImageLayerSubsetStyl
 from glue.viewers.image.layer_artist import ImageLayerArtist, ImageSubsetLayerArtist
 from glue.viewers.image.qt.options_widget import ImageOptionsWidget
 from glue.viewers.image.qt.mouse_mode import RoiClickAndDragMode
-from glue.viewers.image.state import ImageViewerState
 from glue.utils import defer_draw, decorate_all_methods
 
 # Import the mouse mode to make sure it gets registered
@@ -17,6 +16,7 @@ from glue.utils import defer_draw, decorate_all_methods
 #from .qt.pixel_selection_mode import PixelSelectionTool  # noqa
 
 from .viewer import MatplotlibHeatmapMixin
+from .state import HeatmapViewerState
 
 __all__ = ['ImageHeatmapViewer']
 
@@ -29,7 +29,7 @@ class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):
     _layer_style_widget_cls = {ImageLayerArtist: ImageLayerStyleEditor,
                                ImageSubsetLayerArtist: ImageLayerSubsetStyleEditor,
                                ScatterLayerArtist: ScatterLayerStyleEditor}
-    _state_cls = ImageViewerState
+    _state_cls = HeatmapViewerState
     _options_cls = ImageOptionsWidget
 
     allow_duplicate_data = True
@@ -42,7 +42,7 @@ class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):
              'select:yrange', 'image:point_selection', 'image:contrast_bias']
 
     def __init__(self, session, parent=None, state=None):
-        MatplotlibDataViewer.__init__(self, session, wcs=True, parent=parent, state=state)
+        MatplotlibDataViewer.__init__(self, session, wcs=False, parent=parent, state=state)
         MatplotlibHeatmapMixin.setup_callbacks(self)
 
     def closeEvent(self, *args):
