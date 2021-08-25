@@ -70,7 +70,7 @@ class HeatmapViewerState(MatplotlibDataViewerState):
         self.add_callback('x_att_world', self._on_xatt_world_change, priority=1000)
         self.add_callback('y_att_world', self._on_yatt_world_change, priority=1000)
 
-        aspect_display = {'equal': 'Square Pixels', 'auto': 'Automatic'}
+        aspect_display = {'auto': 'Automatic', 'equal': 'Square Pixels'}
         HeatmapViewerState.aspect.set_choices(self, ['auto', 'equal'])
         HeatmapViewerState.aspect.set_display_func(self, aspect_display.get)
 
@@ -128,6 +128,64 @@ class HeatmapViewerState(MatplotlibDataViewerState):
                     # so we do this here manually.
                     self._on_xatt_world_change()
                     self._on_yatt_world_change()
+
+    @property
+    def x_categories(self):
+        return self._categories(self.x_att)
+    
+    @property
+    def y_categories(self):
+        return self._categories(self.y_att)
+    
+    def _categories(self, cid):
+    
+        categories = []
+    
+        for layer_state in self.layers:
+    
+            if isinstance(layer_state.layer, BaseData):
+                layer = layer_state.layer
+            else:
+                layer = layer_state.layer.data
+    
+            try:
+                if layer.data.get_kind(cid) == 'categorical':
+                    categories.append(layer.data.get_data(cid).categories)
+            except IncompatibleAttribute:
+                pass
+    
+        if len(categories) == 0:
+            return None
+        else:
+            return np.unique(np.hstack(categories))
+    
+    @property
+    def x_kinds(self):
+        return self._component_kinds(self.x_att)
+    
+    @property
+    def y_kinds(self):
+        return self._component_kinds(self.y_att)
+    
+    def _component_kinds(self, cid):
+    
+        # Construct list of component kinds over all layers
+    
+        kinds = set()
+    
+        for layer_state in self.layers:
+    
+            if isinstance(layer_state.layer, BaseData):
+                layer = layer_state.layer
+            else:
+                layer = layer_state.layer.data
+    
+            try:
+                kinds.add(layer.data.get_kind(cid))
+            except IncompatibleAttribute:
+                pass
+    
+        return kinds
 
     def _layers_changed(self, *args):
 

@@ -1,8 +1,10 @@
 import os
+import numpy as np
 
 from glue.core.subset import roi_to_subset_state
 from glue.core.coordinates import Coordinates, LegacyCoordinates
 from glue.core.coordinate_helpers import dependent_axes
+from glue.core.util import update_ticks
 
 from glue.viewers.scatter.layer_artist import ScatterLayerArtist
 from glue.viewers.image.layer_artist import ImageLayerArtist, ImageSubsetLayerArtist
@@ -28,14 +30,15 @@ class MatplotlibHeatmapMixin(object):
         self._wcs_set = False
         self._changing_slice_requires_wcs_update = None
         self.axes.set_adjustable('datalim')
-        #self.state.add_callback('x_att') #We do need these callbacks... see ._on_attribute_change() here http://docs.glueviz.org/en/stable/customizing_guide/matplotlib_qt_viewer.html Used to be _set_wcs
-        #self.state.add_callback('y_att')
+        self.state.add_callback('x_att', self._update_axes) #We do need these callbacks... see ._on_attribute_change() here http://docs.glueviz.org/en/stable/customizing_guide/matplotlib_qt_viewer.html Used to be _set_wcs
+        self.state.add_callback('y_att', self._update_axes)
         #self.state.add_callback('slices') #probably we don't need this
         #self.state.add_callback('reference_data') # probably we don't need this
         self.axes._composite = CompositeArray()
         self.axes._composite_image = imshow(self.axes, self.axes._composite, aspect='auto',
                                             origin='lower', interpolation='nearest')
     def bad_update_x_ticklabel(self, *event):
+        print("Entering ")
         # We need to overload this here for WCSAxes
         if hasattr(self, '_wcs_set') and self._wcs_set and self.state.x_att is not None:
             axis = self.state.reference_data.ndim - self.state.x_att.axis - 1
@@ -55,8 +58,15 @@ class MatplotlibHeatmapMixin(object):
 
     def _update_axes(self, *args):
 
+        print("Entering _update_axes")
+        print(f'x_att_world = {self.state.x_att_world}')
+        print(f'x_att = {self.state.x_att}')
         if self.state.x_att_world is not None:
             self.state.x_axislabel = self.state.x_att_world.label
+            self.state.x_axislabel = 'Experiment ID'
+            print("self.state.x_att_world is not None")
+            print(f'self.state.x_categories {self.state.x_categories}')
+            update_ticks(self.axes, 'x', ['categorical'], False, np.linspace(0,39,num=40,dtype='int'))
 
         if self.state.y_att_world is not None:
             self.state.y_axislabel = self.state.y_att_world.label
