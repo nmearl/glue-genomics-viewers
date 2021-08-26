@@ -20,6 +20,7 @@ from .state import HeatmapViewerState
 
 __all__ = ['ImageHeatmapViewer']
 
+        
 
 @decorate_all_methods(defer_draw)
 class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):

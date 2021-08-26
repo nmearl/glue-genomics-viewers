@@ -80,6 +80,7 @@ class HeatmapViewerState(MatplotlibDataViewerState):
 
     def reset_limits(self):
 
+        print("In reset_limits...")
         if self.reference_data is None or self.x_att is None or self.y_att is None:
             return
 
