@@ -30,47 +30,19 @@ class MatplotlibHeatmapMixin(object):
         self._wcs_set = False
         self._changing_slice_requires_wcs_update = None
         self.axes.set_adjustable('datalim')
-        self.state.add_callback('x_att', self._update_axes) #We do need these callbacks... see ._on_attribute_change() here http://docs.glueviz.org/en/stable/customizing_guide/matplotlib_qt_viewer.html Used to be _set_wcs
+        self.state.add_callback('x_att', self._update_axes)
         self.state.add_callback('y_att', self._update_axes)
-        #self.state.add_callback('slices') #probably we don't need this
-        self.state.add_callback('reference_data', self._set_wcs) # probably we don't need this
+        self.state.add_callback('reference_data', self._set_wcs)
         self.axes._composite = CompositeArray()
         self.axes._composite_image = imshow(self.axes, self.axes._composite, aspect='auto',
                                             origin='lower', interpolation='nearest')
-#    def _update_x_ticklabel(self, *event):
-#        print("Entering ")
-#        # We need to overload this here for WCSAxes
-#        if hasattr(self, '_wcs_set') and self._wcs_set and self.state.x_att is not None:
-#            axis = self.state.reference_data.ndim - self.state.x_att.axis - 1
-#        else:
-#            axis = 0
-#        self.axes.coords[axis].set_ticklabel(size=self.state.x_ticklabel_size) #self.axes is an astropy thing. Setting #WCS=False gets here, which crashes
-#        self.redraw()
-
-#    def _update_y_ticklabel(self, *event):
-#        # We need to overload this here for WCSAxes
-#        if hasattr(self, '_wcs_set') and self._wcs_set and self.state.y_att is not None:
-#            axis = self.state.reference_data.ndim - self.state.y_att.axis - 1
-#        else:
-#            axis = 1
-#        self.axes.coords[axis].set_ticklabel(size=self.state.y_ticklabel_size)
-#        self.redraw()
-
     def _update_axes(self, *args):
-
-        print("Entering _update_axes")
-        print(f'x_att_world = {self.state.x_att_world}')
-        print(f'x_att = {self.state.x_att}')
 
         if self.state.x_att_world is not None:
             self.state.x_axislabel = self.state.x_att_world.label
-            #self.state.x_axislabel = 'Experiment ID'
-            print("self.state.x_att_world is not None")
-            #print(f'self.state.x_categories {self.state.x_categories}')
-            x_ticks = self.state.reference_data.coords.get_tick_labels(self.state.x_axislabel) #We need to store _these_ somewhere in state. x_att == 'World Pixel 0 -> something'
-            print(f'x_ticks = {x_ticks}')
+            x_ticks = self.state.reference_data.coords.get_tick_labels(self.state.x_axislabel) 
             update_ticks(self.axes, 'x', ['categorical'], False, x_ticks)
-            self.axes.xaxis.set_tick_params(rotation=0)
+            #self.axes.xaxis.set_tick_params(rotation=0)
         if self.state.y_att_world is not None:
             self.state.y_axislabel = self.state.y_att_world.label
             y_ticks =self.state.reference_data.coords.get_tick_labels(self.state.y_axislabel)
@@ -89,13 +61,7 @@ class MatplotlibHeatmapMixin(object):
             return
     
         ref_coords = getattr(self.state.reference_data, 'coords', None)
-    
-        #if ref_coords is None or isinstance(ref_coords, LegacyCoordinates):
-        #    self.axes.reset_wcs(slices=self.state.wcsaxes_slice,
-        #                        wcs=get_identity_wcs(self.state.reference_data.ndim))
-        #else:
-        #    self.axes.reset_wcs(slices=self.state.wcsaxes_slice, wcs=ref_coords)
-    
+        
         # Reset the axis labels to match the fact that the new axes have no labels
         self.state.x_axislabel = ''
         self.state.y_axislabel = ''
