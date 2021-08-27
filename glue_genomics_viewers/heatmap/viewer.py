@@ -110,7 +110,23 @@ class MatplotlibHeatmapMixin(object):
         if self.state.x_att is None or self.state.y_att is None or self.state.reference_data is None:
             return
 
-        #x_selection_component_id = self.state.reference_data.components[5] #Need a better way to reference
+        # We do NOT want to define a subset on the pixel coordinates, since they are not
+        # meaningful in a data matrix/heatmap. Instead, we will do the following:
+        #   1) Get extent of ROI
+        #   2) Use coords to get a reverse mapping from pixel x back to 
+        #   1) Get a list of all ids in a roi
+        #   2) Create an OrState subset concatenating them
+        
+        if roi.ori == 'x':
+            xmin = round(roi.min)
+            xmax = round(roi.max)
+            print(roi.min,xmin)
+            print(roi.max,xmax)
+            x_ticks = self.state.reference_data.coords.x_axis_ticks[xmin:xmax]
+            x_selection_component_id = self.state.reference_data.components[5] #Need a better way to reference
+            #for 
+            
+            
         #y_selection_component_id = self.state.reference_data.components[6]
 
         #subset_state = ElementSubsetState(indices=, data=self.data)

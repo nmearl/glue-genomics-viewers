@@ -18,9 +18,8 @@ from glue.utils import defer_draw, decorate_all_methods
 from .viewer import MatplotlibHeatmapMixin
 from .state import HeatmapViewerState
 
-__all__ = ['ImageHeatmapViewer']
+__all__ = ['HeatmapViewer']
 
-        
 
 @decorate_all_methods(defer_draw)
 class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):
@@ -40,7 +39,7 @@ class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):
     #       more advanced logic.
 
     tools = ['select:rectangle', 'select:xrange',
-             'select:yrange', 'image:point_selection', 'image:contrast_bias']
+             'select:yrange', 'image:point_selection', 'image:contrast_bias', 'heatmap:cluster']
 
     def __init__(self, session, parent=None, state=None):
         MatplotlibDataViewer.__init__(self, session, wcs=False, parent=parent, state=state)
