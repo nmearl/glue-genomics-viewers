@@ -37,14 +37,16 @@ class ClusterTool(Tool):
 		orig_yticks = data.coords.y_axis_ticks
 		orig_labels = data.coords._labels
 
-		new_xticks = np.array(orig_xticks[np.array(new_col_ind).argsort()])
-		new_yticks = np.array(orig_yticks[np.array(new_row_ind).argsort()])
+		new_xticks = [orig_xticks[i] for i in new_col_ind]
+		new_yticks = [orig_yticks[i] for i in new_row_ind]
 
-		self.viewer.state.reference_data.coords = HeatmapCoords(n_dim=2, x_axis_ticks=new_xticks, y_axis_ticks= new_yticks,labels=orig_labels)
+		data.coords.x_axis_ticks = np.array(new_xticks)
+		data.coords.y_axis_ticks = np.array(new_yticks)
 		
 		for component in data.components:
 			if not isinstance(component, PixelComponentID):  # Ignore pixel components
 				data.update_components({component:pd.DataFrame(data.get_data(component)).iloc[new_row_ind,new_col_ind]})
+				
 		self.viewer._update_axes()
 
 	def close(self):
