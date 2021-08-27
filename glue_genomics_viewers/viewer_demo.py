@@ -3,7 +3,15 @@ import numpy as np
 from glue.core import Data, DataCollection
 from glue.app.qt.application import GlueApplication
 from glue_genomics_viewers.heatmap.data_viewer import HeatmapViewer
+from glue.viewers.table.qt import TableViewer
 from heatmap.heatmap_coords import HeatmapCoords
+
+
+def df_to_data(obj,label=None):
+	result = Data(label=label)
+	for c in obj.columns:
+		result.add_component(obj[c], str(c))
+	return result
 
 		
 if __name__ == "__main__":
@@ -22,20 +30,32 @@ if __name__ == "__main__":
 	gene_labels = np.array(gene_numbers) #df_counts.index is proper, but these are way too long
 	exp_labels = np.array(experiment_id) #df_counts.columns is proper, but a bit too long
 	
-	d = Data(counts=counts_data, 
+	d1 = Data(counts=counts_data, 
 			 gene_ids=gene_array, 
 			 exp_ids=experiment_array,
 			 label='gene_expression',
 		 	 coords=HeatmapCoords(n_dim=2, x_axis_ticks=exp_labels, y_axis_ticks=gene_labels, labels=['Experiment ID','Gene ID']))
 			 
-	print(d.coords)
-	dc = DataCollection([d])
+	print(d1.coords)
+	
+	df_metadata = pd.read_csv('three_bears_liver_rnaseq_matrix_metadata.txt', sep='\t')#.set_index(metadata_index)
+	df_metadata.columns = df_metadata.columns.str.lower()  # For consistency
+	
+	df_metadata['orsam_id'] = [int(x[5:]) for x in df_metadata['barcode']]
+	
+	d2 = df_to_data(df_metadata,label='rnaseq_metadata')
+	
+	dc = DataCollection([d1, d2])
 	ga = GlueApplication(dc)
 	
+	dc[0].join_on_key(dc[1],'exp_ids','orsam_id')
 	#qglue(gene_exp=counts_data)
 	
 	scatter = ga.new_data_viewer(HeatmapViewer)
-	scatter.add_data(d)
+	scatter.add_data(d1)
+	
+	metadata = ga.new_data_viewer(TableViewer)
+	metadata.add_data(d2)
 	
 	# show the GUI
 	ga.start()

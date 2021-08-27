@@ -18,9 +18,9 @@ from glue.utils import defer_draw, decorate_all_methods
 from .viewer import MatplotlibHeatmapMixin
 from .state import HeatmapViewerState
 
-__all__ = ['ImageHeatmapViewer']
+__all__ = ['HeatmapViewer']
 
-        
+
 
 @decorate_all_methods(defer_draw)
 class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):
