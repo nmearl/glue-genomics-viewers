@@ -37,7 +37,6 @@ class MatplotlibHeatmapMixin(object):
         self.axes._composite_image = imshow(self.axes, self.axes._composite, aspect='auto',
                                             origin='lower', interpolation='nearest')
     def _update_axes(self, *args):
-
         if self.state.x_att_world is not None:
             self.state.x_axislabel = self.state.x_att_world.label
             x_ticks = self.state.reference_data.coords.get_tick_labels(self.state.x_axislabel) 
@@ -111,10 +110,18 @@ class MatplotlibHeatmapMixin(object):
         if self.state.x_att is None or self.state.y_att is None or self.state.reference_data is None:
             return
 
-        subset_state = roi_to_subset_state(roi,
-                                           x_att=self.state.x_att,
-                                           y_att=self.state.y_att)
+        #x_selection_component_id = self.state.reference_data.components[5] #Need a better way to reference
+        #y_selection_component_id = self.state.reference_data.components[6]
 
+        #subset_state = ElementSubsetState(indices=, data=self.data)
+
+        #subset_state = roi_to_subset_state(roi,
+        #                                   x_att=self.state.reference_data.get_component(x_selection_component_id),
+        #                                   y_att=self.state.reference_data.get_component(y_selection_component_id))
+
+        subset_state = roi_to_subset_state(roi,
+                                               x_att=self.state.x_att,
+                                               y_att=self.state.x_att)
         self.apply_subset_state(subset_state, override_mode=override_mode)
 
     def _scatter_artist(self, axes, state, layer=None, layer_state=None):
