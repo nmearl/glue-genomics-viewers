@@ -1,7 +1,8 @@
 import os
-import numpy as np
+import operator
+import math
 
-from glue.core.subset import roi_to_subset_state
+from glue.core.subset import roi_to_subset_state, InequalitySubsetState, MultiOrState, combine_multiple
 from glue.core.coordinates import Coordinates, LegacyCoordinates
 from glue.core.coordinate_helpers import dependent_axes
 from glue.core.util import update_ticks
@@ -117,27 +118,23 @@ class MatplotlibHeatmapMixin(object):
         #   1) Get a list of all ids in a roi
         #   2) Create an OrState subset concatenating them
         
+        # FIXME: A subset defined this way works well in the HeatmapViewer, and propagates correctly
+        # through join_on_key, but I think join_on_key gets broken by clustering...
+        
+        cmin = round(roi.min) # this is not exactly the same logic as roi_to_subset, but it works okay
+        cmax = math.ceil(roi.max)
+
         if roi.ori == 'x':
-            xmin = round(roi.min)
-            xmax = round(roi.max)
-            print(roi.min,xmin)
-            print(roi.max,xmax)
-            x_ticks = self.state.reference_data.coords.x_axis_ticks[xmin:xmax]
-            x_selection_component_id = self.state.reference_data.components[5] #Need a better way to reference
-            #for 
-            
-            
-        #y_selection_component_id = self.state.reference_data.components[6]
+            selection_component_id = self.state.reference_data.components[5] #Need a better way to reference
+            ticks = self.state.reference_data.coords.x_axis_ticks[cmin:cmax]
 
-        #subset_state = ElementSubsetState(indices=, data=self.data)
+        elif roi.ori == 'y':
+            selection_component_id = self.state.reference_data.components[6] #Need a better way to reference
+            ticks = self.state.reference_data.coords.y_axis_ticks[cmin:cmax] 
 
-        #subset_state = roi_to_subset_state(roi,
-        #                                   x_att=self.state.reference_data.get_component(x_selection_component_id),
-        #                                   y_att=self.state.reference_data.get_component(y_selection_component_id))
+        states = [InequalitySubsetState(selection_component_id, int(t), operator.eq) for t in ticks]
+        subset_state = MultiOrState(states)
 
-        subset_state = roi_to_subset_state(roi,
-                                               x_att=self.state.x_att,
-                                               y_att=self.state.x_att)
         self.apply_subset_state(subset_state, override_mode=override_mode)
 
     def _scatter_artist(self, axes, state, layer=None, layer_state=None):
