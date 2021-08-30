@@ -37,8 +37,7 @@ class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):
     #       we override get_data_layer_artist and get_subset_layer_artist for
     #       more advanced logic.
 
-    tools = ['select:rectangle', 'select:xrange',
-             'select:yrange', 'image:point_selection', 'image:contrast_bias', 'heatmap:cluster']
+    tools = ['select:xrange', 'select:yrange', 'image:contrast_bias', 'heatmap:cluster']
 
     def __init__(self, session, parent=None, state=None):
         MatplotlibDataViewer.__init__(self, session, wcs=False, parent=parent, state=state)
