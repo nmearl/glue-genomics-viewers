@@ -5,7 +5,8 @@ from glue.core.subset import RoiSubsetState
 from glue.core.roi import MplPolygonalROI
 from glue.core.edit_subset_mode import ReplaceMode
 from glue.viewers.matplotlib.mouse_mode import MouseMode
-from glue.viewers.image.layer_artist import ImageSubsetLayerArtist
+
+from glue_genomics_viewers.heatmap.layer_artist import HeatampSubsetLayerArtist
 
 
 __all__ = ['RoiClickAndDragMode']
@@ -65,7 +66,7 @@ class RoiClickAndDragMode(MouseMode):
 
         roi_index = 0
         for layer in self._viewer.layers:
-            if not isinstance(layer, ImageSubsetLayerArtist):
+            if not isinstance(layer, HeatampSubsetLayerArtist):
                 continue
 
             subset_state = layer.state.layer.subset_state

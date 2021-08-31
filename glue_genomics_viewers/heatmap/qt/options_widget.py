@@ -4,17 +4,17 @@ from qtpy import QtWidgets
 
 from echo.qt import autoconnect_callbacks_to_qt
 from glue.utils.qt import load_ui, fix_tab_widget_fontsize
-from glue.viewers.image.qt.slice_widget import MultiSliceWidgetHelper
+from glue.viewers.image.qt.slice_widget import MultiSliceWidgetHelper #Probably obsolete
 from glue.viewers.matplotlib.state import MatplotlibDataViewerState
 
-__all__ = ['ImageOptionsWidget']
+__all__ = ['HeatmapOptionsWidget']
 
 
-class ImageOptionsWidget(QtWidgets.QWidget):
+class HeatmapOptionsWidget(QtWidgets.QWidget):
 
     def __init__(self, viewer_state, session, parent=None):
 
-        super(ImageOptionsWidget, self).__init__(parent=parent)
+        super(HeatmapOptionsWidget, self).__init__(parent=parent)
 
         self.ui = load_ui('options_widget.ui', self,
                           directory=os.path.dirname(__file__))

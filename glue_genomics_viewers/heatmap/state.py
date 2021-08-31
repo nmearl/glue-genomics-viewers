@@ -13,7 +13,7 @@ from echo import delay_callback
 from glue.core.data_combo_helper import ManualDataComboHelper, ComponentIDComboHelper
 from glue.core.exceptions import IncompatibleDataException
 
-__all__ = ['HeatmapVewerState', 'ImageLayerState', 'ImageSubsetLayerState', 'AggregateSlice']
+__all__ = ['HeatmapVewerState', 'HeatmapLayerState', 'HeatmapSubsetLayerState', 'AggregateSlice']
 
 
 class HeatmapViewerState(MatplotlibDataViewerState):
@@ -386,7 +386,7 @@ class HeatmapViewerState(MatplotlibDataViewerState):
             self.y_min, self.y_max = self.y_max, self.y_min
 
 
-class BaseImageLayerState(MatplotlibLayerState):
+class BaseHeatmapLayerState(MatplotlibLayerState):
 
     _viewer_callbacks_set = False
     _image_cache = None
@@ -489,7 +489,7 @@ class BaseImageLayerState(MatplotlibLayerState):
         return image
 
 
-class ImageLayerState(BaseImageLayerState):
+class HeatmapLayerState(BaseHeatmapLayerState):
     """
     A state class that includes all the attributes for data layers in an image plot.
     """
@@ -514,7 +514,7 @@ class ImageLayerState(BaseImageLayerState):
 
         self.uuid = str(uuid.uuid4())
 
-        super(ImageLayerState, self).__init__(layer=layer, viewer_state=viewer_state)
+        super(HeatmapLayerState, self).__init__(layer=layer, viewer_state=viewer_state)
 
         self.attribute_lim_helper = StateAttributeLimitsHelper(self, attribute='attribute',
                                                                percentile='percentile',
@@ -530,16 +530,16 @@ class ImageLayerState(BaseImageLayerState):
                               90: '90%',
                               'Custom': 'Custom'}
 
-        ImageLayerState.percentile.set_choices(self, [100, 99.5, 99, 95, 90, 'Custom'])
-        ImageLayerState.percentile.set_display_func(self, percentile_display.get)
+        HeatmapLayerState.percentile.set_choices(self, [100, 99.5, 99, 95, 90, 'Custom'])
+        HeatmapLayerState.percentile.set_display_func(self, percentile_display.get)
 
         stretch_display = {'linear': 'Linear',
                            'sqrt': 'Square Root',
                            'arcsinh': 'Arcsinh',
                            'log': 'Logarithmic'}
 
-        ImageLayerState.stretch.set_choices(self, ['linear', 'sqrt', 'arcsinh', 'log'])
-        ImageLayerState.stretch.set_display_func(self, stretch_display.get)
+        HeatmapLayerState.stretch.set_choices(self, ['linear', 'sqrt', 'arcsinh', 'log'])
+        HeatmapLayerState.stretch.set_display_func(self, stretch_display.get)
 
         self.add_callback('global_sync', self._update_syncing)
         self.add_callback('layer', self._update_attribute)
@@ -594,7 +594,7 @@ class ImageLayerState(BaseImageLayerState):
             self.bias = 0.5
 
 
-class ImageSubsetLayerState(BaseImageLayerState):
+class HeatmapSubsetLayerState(BaseHeatmapLayerState):
     """
     A state class that includes all the attributes for subset layers in an image plot.
     """
@@ -604,7 +604,7 @@ class ImageSubsetLayerState(BaseImageLayerState):
 
     def __init__(self, *args, **kwargs):
         self.uuid = str(uuid.uuid4())
-        super(ImageSubsetLayerState, self).__init__(*args, **kwargs)
+        super(HeatmapSubsetLayerState, self).__init__(*args, **kwargs)
 
     def _get_image(self, view=None):
         return self.layer.to_mask(view=view)

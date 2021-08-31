@@ -8,8 +8,7 @@ import matplotlib.colors as mcolors
 
 from glue.utils import defer_draw, broadcast_to
 
-from glue.viewers.image.state import ImageLayerState, ImageSubsetLayerState
-from glue.viewers.image.python_export import python_export_image_layer, python_export_image_subset_layer
+from glue.viewers.image.python_export import python_export_image_layer, python_export_image_subset_layer #This will not actually work
 from glue.viewers.image.pixel_selection_subset_state import PixelSubsetState
 from glue.viewers.matplotlib.layer_artist import MatplotlibLayerArtist
 from glue.core.exceptions import IncompatibleAttribute
@@ -22,12 +21,14 @@ from glue.core.message import (ComponentsChangedMessage,
 from glue.viewers.image.frb_artist import imshow
 from glue.core.fixed_resolution_buffer import ARRAY_CACHE, PIXEL_CACHE
 
+from .state import HeatmapLayerState, HeatmapSubsetLayerState
 
-class BaseImageLayerArtist(MatplotlibLayerArtist, HubListener):
+
+class HeatmapHeatmapLayerArtist(MatplotlibLayerArtist, HubListener):
 
     def __init__(self, axes, viewer_state, layer_state=None, layer=None):
 
-        super(BaseImageLayerArtist, self).__init__(axes, viewer_state,
+        super(HeatmapHeatmapLayerArtist, self).__init__(axes, viewer_state,
                                                    layer_state=layer_state, layer=layer)
 
         # Watch for changes in the viewer state which would require the
@@ -57,14 +58,14 @@ class BaseImageLayerArtist(MatplotlibLayerArtist, HubListener):
         raise NotImplementedError()
 
 
-class ImageLayerArtist(BaseImageLayerArtist):
+class HeatmapLayerArtist(HeatmapHeatmapLayerArtist):
 
-    _layer_state_cls = ImageLayerState
+    _layer_state_cls = HeatmapLayerState
     _python_exporter = python_export_image_layer
 
     def __init__(self, axes, viewer_state, layer_state=None, layer=None):
 
-        super(ImageLayerArtist, self).__init__(axes, viewer_state,
+        super(HeatmapLayerArtist, self).__init__(axes, viewer_state,
                                                layer_state=layer_state, layer=layer)
 
         # We use a custom object to deal with the compositing of images, and we
@@ -106,10 +107,10 @@ class ImageLayerArtist(BaseImageLayerArtist):
     def enable(self):
         if hasattr(self, 'composite_image'):
             self.composite_image.invalidate_cache()
-        super(ImageLayerArtist, self).enable()
+        super(HeatmapLayerArtist, self).enable()
 
     def remove(self):
-        super(ImageLayerArtist, self).remove()
+        super(HeatmapLayerArtist, self).remove()
         if self.uuid in self.composite:
             self.composite.deallocate(self.uuid)
             self.composite_image.invalidate_cache()
@@ -201,7 +202,7 @@ class ImageLayerArtist(BaseImageLayerArtist):
         self.redraw()
 
 
-class ImageSubsetArray(object):
+class HetampSubsetArray(object):
 
     def __init__(self, viewer_state, layer_artist):
         self._viewer_state = weakref.ref(viewer_state)
@@ -268,17 +269,17 @@ class ImageSubsetArray(object):
         return np.product(self.shape)
 
 
-class ImageSubsetLayerArtist(BaseImageLayerArtist):
+class HeatampSubsetLayerArtist(HeatmapHeatmapLayerArtist):
 
-    _layer_state_cls = ImageSubsetLayerState
+    _layer_state_cls = HeatmapSubsetLayerState
     _python_exporter = python_export_image_subset_layer
 
     def __init__(self, axes, viewer_state, layer_state=None, layer=None):
 
-        super(ImageSubsetLayerArtist, self).__init__(axes, viewer_state,
+        super(HeatampSubsetLayerArtist, self).__init__(axes, viewer_state,
                                                      layer_state=layer_state, layer=layer)
 
-        self.subset_array = ImageSubsetArray(self._viewer_state, self)
+        self.subset_array = HetampSubsetArray(self._viewer_state, self)
 
         self.image_artist = imshow(self.axes, self.subset_array,
                                    origin='lower', interpolation='nearest',
@@ -350,13 +351,13 @@ class ImageSubsetLayerArtist(BaseImageLayerArtist):
             self._update_visual_attributes()
 
     def remove(self):
-        super(ImageSubsetLayerArtist, self).remove()
+        super(HeatampSubsetLayerArtist, self).remove()
         self.image_artist.invalidate_cache()
         ARRAY_CACHE.pop(self.state.uuid, None)
         PIXEL_CACHE.pop(self.state.uuid, None)
 
     def enable(self, redraw=True):
-        super(ImageSubsetLayerArtist, self).enable()
+        super(HeatampSubsetLayerArtist, self).enable()
         # We need to now ensure that image_artist, which may have been marked
         # as not being visible when the layer was cleared is made visible
         # again.

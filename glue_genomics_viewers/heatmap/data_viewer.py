@@ -4,12 +4,14 @@
 from glue.viewers.matplotlib.qt.data_viewer import MatplotlibDataViewer
 from glue.viewers.scatter.qt.layer_style_editor import ScatterLayerStyleEditor
 from glue.viewers.scatter.layer_artist import ScatterLayerArtist
-from glue.viewers.image.qt.layer_style_editor import ImageLayerStyleEditor
-from glue.viewers.image.qt.layer_style_editor_subset import ImageLayerSubsetStyleEditor
-from glue.viewers.image.layer_artist import ImageLayerArtist, ImageSubsetLayerArtist
-from glue.viewers.image.qt.options_widget import ImageOptionsWidget
-from glue.viewers.image.qt.mouse_mode import RoiClickAndDragMode
 from glue.utils import defer_draw, decorate_all_methods
+
+
+from .qt.layer_style_editor import HeatmapLayerStyleEditor
+from .qt.layer_style_editor_subset import HeatmapLayerSubsetStyleEditor
+from .layer_artist import HeatmapLayerArtist, HeatampSubsetLayerArtist
+from .qt.options_widget import HeatmapOptionsWidget
+from .qt.mouse_mode import RoiClickAndDragMode
 
 # Import the mouse mode to make sure it gets registered
 #from .qt.contrast_mouse_mode import ContrastBiasMode  # noqa
@@ -25,11 +27,11 @@ class HeatmapViewer(MatplotlibHeatmapMixin, MatplotlibDataViewer):
 
     LABEL = 'Heatmap'
     _default_mouse_mode_cls = RoiClickAndDragMode
-    _layer_style_widget_cls = {ImageLayerArtist: ImageLayerStyleEditor,
-                               ImageSubsetLayerArtist: ImageLayerSubsetStyleEditor,
+    _layer_style_widget_cls = {HeatmapLayerArtist: HeatmapLayerStyleEditor,
+                               HeatampSubsetLayerArtist: HeatmapLayerSubsetStyleEditor,
                                ScatterLayerArtist: ScatterLayerStyleEditor}
     _state_cls = HeatmapViewerState
-    _options_cls = ImageOptionsWidget
+    _options_cls = HeatmapOptionsWidget
 
     allow_duplicate_data = True
 

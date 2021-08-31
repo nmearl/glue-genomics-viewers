@@ -8,11 +8,13 @@ from glue.core.coordinate_helpers import dependent_axes
 from glue.core.util import update_ticks
 
 from glue.viewers.scatter.layer_artist import ScatterLayerArtist
-from glue.viewers.image.layer_artist import ImageLayerArtist, ImageSubsetLayerArtist
-from glue.viewers.image.compat import update_image_viewer_state
+from glue.viewers.image.compat import update_image_viewer_state #This will not work
 
 from glue.viewers.image.frb_artist import imshow
 from glue.viewers.image.composite_array import CompositeArray
+
+from .layer_artist import HeatmapLayerArtist, HeatampSubsetLayerArtist
+
 
 __all__ = ['MatplotlibHeatmapMixin']
 
@@ -146,14 +148,14 @@ class MatplotlibHeatmapMixin(object):
         if layer.ndim == 1:
             cls = self._scatter_artist
         else:
-            cls = ImageLayerArtist
+            cls = HeatmapLayerArtist
         return self.get_layer_artist(cls, layer=layer, layer_state=layer_state)
 
     def get_subset_layer_artist(self, layer=None, layer_state=None):
         if layer.ndim == 1:
             cls = self._scatter_artist
         else:
-            cls = ImageSubsetLayerArtist
+            cls = HeatampSubsetLayerArtist
         return self.get_layer_artist(cls, layer=layer, layer_state=layer_state)
 
     @staticmethod
