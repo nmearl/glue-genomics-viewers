@@ -128,7 +128,7 @@ class MatplotlibHeatmapMixin(object):
         cmax = math.ceil(roi.max)
 
         if roi.ori == 'x':
-            selection_component_id = self.state.reference_data.components[5] #Need a better way to reference
+            selection_component_id = self.state.x_real_attribute #Need a better way to reference
             ticks = self.state.reference_data.coords.x_axis_ticks[cmin:cmax]
 
         elif roi.ori == 'y':
@@ -137,7 +137,7 @@ class MatplotlibHeatmapMixin(object):
 
         # By far the most stable solution is to define the subset ON the metadata data set, which means
         # that we need a reference to it...
-        selection_component_id = self._data[1].id['orsam_id']
+        selection_component_id = self.state.x_metadata.id['orsam_id']
 
         states = [InequalitySubsetState(selection_component_id, int(t), operator.eq) for t in ticks]
         subset_state = MultiOrState(states)

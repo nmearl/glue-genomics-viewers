@@ -85,7 +85,7 @@ class HeatmapViewerState(MatplotlibDataViewerState):
 
         HeatmapViewerState.color_mode.set_choices(self, ['Colormaps', 'One color per layer'])
         
-        self.x_real_attributes = None
+        self.x_real_attribute = None
         self.update_from_dict(kwargs)
 
     def _x_metadata_changed(self, *args):
@@ -243,8 +243,8 @@ class HeatmapViewerState(MatplotlibDataViewerState):
             print(f'other_dataset = {other_dataset}')
             cid, cid_other = key_join
             print(f'cid = {cid}')
-            print(f'self.x_real_attributes = {self.x_real_attributes}')
-            if cid[0] == self.x_real_attributes:
+            print(f'self.x_real_attribute = {self.x_real_attribute}')
+            if cid[0] == self.x_real_attribute:
                 possible_datasets.append(other_dataset)
             print(possible_datasets)
         self.x_metadata_helper.set_multiple_data(possible_datasets)
@@ -339,7 +339,7 @@ class HeatmapViewerState(MatplotlibDataViewerState):
                 if isinstance(layer.layer, BaseData):
                     self.reference_data = layer.layer
                     return
-        self.x_real_attributes = self.reference_data.components[5]
+        self.x_real_attribute = self.reference_data.components[5]
         self._update_x_metadata_data()
 
             
