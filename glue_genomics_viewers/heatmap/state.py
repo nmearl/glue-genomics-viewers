@@ -35,6 +35,8 @@ class HeatmapViewerState(MatplotlibDataViewerState):
                                             'available pixel/world components, and '
                                             'which defines the coordinate frame in '
                                             'which the images are shown')
+    x_metadata = DDSCProperty(docstring='The dataset defining the x axis')
+
     slices = DDCProperty(docstring='The current slice along all dimensions')
     color_mode = DDSCProperty(0, docstring='Whether each layer can have '
                                            'its own colormap (``Colormaps``) or '
@@ -53,7 +55,10 @@ class HeatmapViewerState(MatplotlibDataViewerState):
         # we can simply call reset_limits below when x/y attributes change.
         # Using StateAttributeLimitsHelper makes things a lot slower.
 
-        self.ref_data_helper = ManualDataComboHelper(self, 'reference_data')
+        self.ref_data_helper = ManualDataComboHelper(self, 'reference_data') # This is actually the heatmap data, we'll keep it here
+
+        self.x_metadata_helper = ManualDataComboHelper(self, 'x_metadata') # This should be populated based on join_on_key on reference_data
+        #self.y_metadata_helper = ManualDataComboHelper(self, 'y_metadata') # This should be populated based on join_on_key on reference_data
 
         self.xw_att_helper = ComponentIDComboHelper(self, 'x_att_world',
                                                     numeric=False, datetime=False, categorical=False)
@@ -62,6 +67,10 @@ class HeatmapViewerState(MatplotlibDataViewerState):
                                                     numeric=False, datetime=False, categorical=False)
 
         self.add_callback('reference_data', self._reference_data_changed, priority=1000)
+        
+        self.add_callback('x_metadata', self._x_metadata_changed, priority=1000)
+        #self.add_callback('y_metadata', self._y_metadata_changed, priority=1000)
+        
         self.add_callback('layers', self._layers_changed, priority=1000)
 
         self.add_callback('x_att', self._on_xatt_change, priority=500)
@@ -75,8 +84,12 @@ class HeatmapViewerState(MatplotlibDataViewerState):
         HeatmapViewerState.aspect.set_display_func(self, aspect_display.get)
 
         HeatmapViewerState.color_mode.set_choices(self, ['Colormaps', 'One color per layer'])
-
+        
+        self.x_real_attributes = None
         self.update_from_dict(kwargs)
+
+    def _x_metadata_changed(self, *args):
+        pass
 
     def reset_limits(self):
 
@@ -224,6 +237,18 @@ class HeatmapViewerState(MatplotlibDataViewerState):
                     if getattr(layer_state, 'global_sync', False):
                         layer_state.global_sync = False
 
+    def _update_x_metadata_data(self):
+        possible_datasets = []
+        for other_dataset, key_join in self.reference_data._key_joins.items():
+            print(f'other_dataset = {other_dataset}')
+            cid, cid_other = key_join
+            print(f'cid = {cid}')
+            print(f'self.x_real_attributes = {self.x_real_attributes}')
+            if cid[0] == self.x_real_attributes:
+                possible_datasets.append(other_dataset)
+            print(possible_datasets)
+        self.x_metadata_helper.set_multiple_data(possible_datasets)
+
     def _update_combo_ref_data(self):
         self.ref_data_helper.set_multiple_data(self.layers_data)
 
@@ -314,6 +339,10 @@ class HeatmapViewerState(MatplotlibDataViewerState):
                 if isinstance(layer.layer, BaseData):
                     self.reference_data = layer.layer
                     return
+        self.x_real_attributes = self.reference_data.components[5]
+        self._update_x_metadata_data()
+
+            
 
     def _set_default_slices(self):
         # Need to make sure this gets called immediately when reference_data is changed
