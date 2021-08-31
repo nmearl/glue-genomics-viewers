@@ -1,8 +1,9 @@
 import os
 import operator
 import math
+#import numpy as np
 
-from glue.core.subset import roi_to_subset_state, InequalitySubsetState, MultiOrState, combine_multiple
+from glue.core.subset import roi_to_subset_state, InequalitySubsetState, MultiOrState, combine_multiple#, ElementSubsetState
 from glue.core.coordinates import Coordinates, LegacyCoordinates
 from glue.core.coordinate_helpers import dependent_axes
 from glue.core.util import update_ticks
@@ -134,8 +135,20 @@ class MatplotlibHeatmapMixin(object):
             selection_component_id = self.state.reference_data.components[6] #Need a better way to reference
             ticks = self.state.reference_data.coords.y_axis_ticks[cmin:cmax] 
 
+        # By far the most stable solution is to define the subset ON the metadata data set, which means
+        # that we need a reference to it...
+        selection_component_id = self._data[1].id['orsam_id']
+
         states = [InequalitySubsetState(selection_component_id, int(t), operator.eq) for t in ticks]
         subset_state = MultiOrState(states)
+        #subset_state = ElementSubsetState(indices = np.array([0,30000]), data = self.state.reference_data)
+
+        #from glue.core.command import ApplySubsetState
+
+        #cmd = ApplySubsetState(data_collection=self._data,
+        #                        subset_state=subset_state,
+        #                        override_mode=override_mode)
+        #self._session.command_stack.do(cmd)
 
         self.apply_subset_state(subset_state, override_mode=override_mode)
 
