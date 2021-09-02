@@ -12,6 +12,11 @@ from glue.utils import defer_draw, view_shape
 from echo import delay_callback
 from glue.core.data_combo_helper import ManualDataComboHelper, ComponentIDComboHelper
 from glue.core.exceptions import IncompatibleDataException
+from glue.core.component_id import ComponentID, PixelComponentID
+from glue.core.component import CoordinateComponent
+
+import numpy as np
+
 
 __all__ = ['HeatmapVewerState', 'HeatmapLayerState', 'HeatmapSubsetLayerState', 'AggregateSlice']
 
@@ -36,6 +41,7 @@ class HeatmapViewerState(MatplotlibDataViewerState):
                                             'which defines the coordinate frame in '
                                             'which the images are shown')
     x_metadata = DDSCProperty(docstring='The dataset defining the x axis')
+    y_metadata = DDSCProperty(docstring='The dataset defining the y axis')
 
     slices = DDCProperty(docstring='The current slice along all dimensions')
     color_mode = DDSCProperty(0, docstring='Whether each layer can have '
@@ -58,7 +64,7 @@ class HeatmapViewerState(MatplotlibDataViewerState):
         self.ref_data_helper = ManualDataComboHelper(self, 'reference_data') # This is actually the heatmap data, we'll keep it here
 
         self.x_metadata_helper = ManualDataComboHelper(self, 'x_metadata') # This should be populated based on join_on_key on reference_data
-        #self.y_metadata_helper = ManualDataComboHelper(self, 'y_metadata') # This should be populated based on join_on_key on reference_data
+        self.y_metadata_helper = ManualDataComboHelper(self, 'y_metadata') # This should be populated based on join_on_key on reference_data
 
         self.xw_att_helper = ComponentIDComboHelper(self, 'x_att_world',
                                                     numeric=False, datetime=False, categorical=False)
@@ -69,7 +75,7 @@ class HeatmapViewerState(MatplotlibDataViewerState):
         self.add_callback('reference_data', self._reference_data_changed, priority=1000)
         
         self.add_callback('x_metadata', self._x_metadata_changed, priority=1000)
-        #self.add_callback('y_metadata', self._y_metadata_changed, priority=1000)
+        self.add_callback('y_metadata', self._y_metadata_changed, priority=1000)
         
         self.add_callback('layers', self._layers_changed, priority=1000)
 
@@ -86,10 +92,27 @@ class HeatmapViewerState(MatplotlibDataViewerState):
         HeatmapViewerState.color_mode.set_choices(self, ['Colormaps', 'One color per layer'])
         
         self.x_real_attribute = None
+        self.y_real_attribute = None
+
+        self.x_linked_attribute = None
+        self.y_linked_attribute = None
+
         self.update_from_dict(kwargs)
 
     def _x_metadata_changed(self, *args):
-        pass
+        for other_dataset, key_join in self.reference_data._key_joins.items():
+            cid, cid_other = key_join
+            if cid[0] == self.x_real_attribute and other_dataset == self.x_metadata:
+                self.x_linked_attribute = cid_other[0]
+        #print(f'x_linked_attribute = {self.x_linked_attribute}')
+                        
+    def _y_metadata_changed(self, *args):
+        for other_dataset, key_join in self.reference_data._key_joins.items():
+            cid, cid_other = key_join
+            if cid[0] == self.y_real_attribute and other_dataset == self.y_metadata:
+                self.y_linked_attribute = cid_other[0]
+        #print(f'y_linked_attribute = {self.y_linked_attribute}')
+
 
     def reset_limits(self):
 
@@ -240,14 +263,23 @@ class HeatmapViewerState(MatplotlibDataViewerState):
     def _update_x_metadata_data(self):
         possible_datasets = []
         for other_dataset, key_join in self.reference_data._key_joins.items():
-            print(f'other_dataset = {other_dataset}')
+            #print(f'other_dataset = {other_dataset}')
             cid, cid_other = key_join
-            print(f'cid = {cid}')
-            print(f'self.x_real_attribute = {self.x_real_attribute}')
+            #print(f'cid = {cid}')
+            #print(f'self.x_real_attribute = {self.x_real_attribute}')
             if cid[0] == self.x_real_attribute:
                 possible_datasets.append(other_dataset)
-            print(possible_datasets)
+            #print(possible_datasets)
         self.x_metadata_helper.set_multiple_data(possible_datasets)
+
+    def _update_y_metadata_data(self):
+        possible_datasets = []
+        for other_dataset, key_join in self.reference_data._key_joins.items():
+            cid, cid_other = key_join
+            if cid[0] == self.y_real_attribute:
+                possible_datasets.append(other_dataset)
+        self.y_metadata_helper.set_multiple_data(possible_datasets)
+
 
     def _update_combo_ref_data(self):
         self.ref_data_helper.set_multiple_data(self.layers_data)
@@ -339,10 +371,33 @@ class HeatmapViewerState(MatplotlibDataViewerState):
                 if isinstance(layer.layer, BaseData):
                     self.reference_data = layer.layer
                     return
-        self.x_real_attribute = self.reference_data.components[5]
-        self._update_x_metadata_data()
+        #print(f'x_real_attribute = {self._check_for_axis_attribute(axis_num=0)}')
+        #print(f'y_real_attribute = {self._check_for_axis_attribute(axis_num=1)}')
 
-            
+        self.x_real_attribute = self._check_for_axis_attribute(axis_num=0)
+        self.y_real_attribute = self._check_for_axis_attribute(axis_num=1)
+        
+         #We cannot set real attribute based on metadata. We could by looking at the shape of the data and seeing if everything in one column is the same. That... could be expensive. 
+        self._update_x_metadata_data()
+        self._update_y_metadata_data()
+
+    def _check_for_axis_attribute(self, axis_num=0):
+        """
+        We want to find which data components are actually the categorical data encoding the x/y axis ticks
+        
+        https://stackoverflow.com/questions/14859458/how-to-check-if-all-values-in-the-columns-of-a-numpy-matrix-are-the-same
+        """
+        for component in self.reference_data.components: #Need to avoid Pixel and other World components
+            #print(type(component))
+            #print(component)
+            if (component not in self.reference_data.world_component_ids) and (component not in self.reference_data.pixel_component_ids):
+                comp_data = self.reference_data.get_component(component).data
+                #print(comp_data.shape)
+                if axis_num == 1:
+                    comp_data = comp_data.T #Dumb, but it works
+                if np.all(np.all(comp_data == comp_data[0,:], axis = 0)):
+                    return component #Short circuit to just find the first one
+
 
     def _set_default_slices(self):
         # Need to make sure this gets called immediately when reference_data is changed

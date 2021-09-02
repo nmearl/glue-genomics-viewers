@@ -40,6 +40,7 @@ class MatplotlibHeatmapMixin(object):
         self.axes._composite = CompositeArray()
         self.axes._composite_image = imshow(self.axes, self.axes._composite, aspect='auto',
                                             origin='lower', interpolation='nearest')
+        #self._set_wcs()
     def _update_axes(self, *args):
         if self.state.x_att_world is not None:
             self.state.x_axislabel = self.state.x_att_world.label
@@ -64,6 +65,13 @@ class MatplotlibHeatmapMixin(object):
             return
     
         ref_coords = getattr(self.state.reference_data, 'coords', None)
+        
+        #if ref_coords is None or isinstance(ref_coords, LegacyCoordinates):
+        #    self.axes.reset_wcs(slices=self.state.wcsaxes_slice,
+        #                        wcs=get_identity_wcs(self.state.reference_data.ndim))
+        #else:
+        #    self.axes.reset_wcs(slices=self.state.wcsaxes_slice, wcs=ref_coords)
+
         
         # Reset the axis labels to match the fact that the new axes have no labels
         self.state.x_axislabel = ''
@@ -128,16 +136,17 @@ class MatplotlibHeatmapMixin(object):
         cmax = math.ceil(roi.max)
 
         if roi.ori == 'x':
-            selection_component_id = self.state.x_real_attribute #Need a better way to reference
+            selection_component_id = self.state.x_linked_attribute or self.state.x_real_attribute #select on linked_attribute if available, otherwise on real one
             ticks = self.state.reference_data.coords.x_axis_ticks[cmin:cmax]
+            #selection_component_id = self.state.x_linked_attribute#.id['orsam_id']
 
         elif roi.ori == 'y':
-            selection_component_id = self.state.reference_data.components[6] #Need a better way to reference
+            selection_component_id = self.state.y_linked_attribute or self.state.y_real_attribute
             ticks = self.state.reference_data.coords.y_axis_ticks[cmin:cmax] 
 
         # By far the most stable solution is to define the subset ON the metadata data set, which means
         # that we need a reference to it...
-        selection_component_id = self.state.x_metadata.id['orsam_id']
+        
 
         states = [InequalitySubsetState(selection_component_id, int(t), operator.eq) for t in ticks]
         subset_state = MultiOrState(states)
