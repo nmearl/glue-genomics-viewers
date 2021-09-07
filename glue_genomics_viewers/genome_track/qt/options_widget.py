@@ -20,7 +20,8 @@ class GenomeTrackOptionsWidget(QtWidgets.QWidget):
 
         fix_tab_widget_fontsize(self.ui.tab_widget)
 
-        self._connections = autoconnect_callbacks_to_qt(viewer_state, self.ui)
+        connect_kwargs = {'loop_count': dict(value_range=(1, 200))}
+        self._connections = autoconnect_callbacks_to_qt(viewer_state, self.ui, connect_kwargs)
         self._connections_axes = autoconnect_callbacks_to_qt(viewer_state, self.ui.axes_editor.ui)
         connect_kwargs = {'alpha': dict(value_range=(0, 1))}
         self._connections_legend = autoconnect_callbacks_to_qt(viewer_state.legend, self.ui.legend_editor.ui, connect_kwargs)
