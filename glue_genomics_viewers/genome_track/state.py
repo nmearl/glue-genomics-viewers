@@ -109,7 +109,7 @@ class GenomeTrackLayerState(MatplotlibLayerState):
             self.viewer_state.expand_y_limits(0, end - start)
         else:
             df = data.profile(chr, start, end, subset_state=subset_state)
-            self.viewer_state.expand_y_limits(df.value.min(), df.value.max(), subset_state=subset_state)
+            self.viewer_state.expand_y_limits(df.value.min(), df.value.max())
 
         self._cache = key, df
         return df
