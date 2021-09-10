@@ -44,7 +44,7 @@ class BedGraph:
 
         This operation is currently very slow (10+ minutes / GB)
         """
-        os.mkdirs(os.path.join(self.path.dirname(self.path), '.glue_index'), exists_ok=True)
+        os.makedirs(os.path.join(os.path.dirname(self.path), '.glue_index'), exist_ok=True)
         outpaths = [self._level_path(i) for i in range(self.depth)]
         if all(os.path.exists(p + '.bgz.tbi') for p in outpaths):
             logger.debug("Already indexed")
@@ -56,7 +56,7 @@ class BedGraph:
 
         downsample_factors = [self.downsample_factor ** (i + 1) for i in range(self.depth)]
         for path, factor in zip(outpaths, downsample_factors):
-            decimated = pd.DataFrame(slf.decimate((rec for _, rec in df.iterrows()), factor),
+            decimated = pd.DataFrame(self.decimate((rec for _, rec in df.iterrows()), factor),
                                      columns=['chrom', 'start', 'stop', 'value'])
             decimated.to_csv(path, sep='\t', index=False, header=False)
             df = decimated
