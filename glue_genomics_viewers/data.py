@@ -3,10 +3,11 @@ from subprocess import check_call, PIPE, Popen
 import os
 import logging
 
+import numpy as np
 import pandas as pd
 from glue.core import Data
 
-from .subsets import GenomicRangeSubsetState
+from .subsets import GenomicRangeSubsetState, GenomicMulitRangeSubsetState
 
 
 logger = logging.getLogger(__name__)
@@ -271,6 +272,11 @@ class BedgraphData(GenomicData):
                 result.start.ge(s) &
                 result.stop.le(e)
             ]
+        elif isinstance(subset_state, GenomicMulitRangeSubsetState): 
+            mask = result.chrom.eq('junk')
+            for c,s,e in zip(subset_state.chroms, subset_state.starts, subset_state.ends):
+                mask |= result.chrom.eq(c) & result.start.ge(s) & result.stop.le(e) #This assumes an OR state, but it could be more complicated
+            return result.loc[mask]
         else:
             # TODO: implement more general subset filtering.
             return result.head(0)
