@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from glue.core import BaseData, Subset
+from glue.core.subset import ElementSubsetState
 
 from echo import delay_callback
 from glue.viewers.matplotlib.state import (MatplotlibDataViewerState,
@@ -44,8 +45,8 @@ class GenomeTrackState(MatplotlibDataViewerState):
         self.add_callback('x_max', self.update_range_to_view)
 
         self.chr = '3'
-        self.start = 100_000
-        self.end = 500_000
+        self.start = 100_000 #3_000_000 
+        self.end = 500_000 # 27_000_000#
         self.loop_count = 100
 
     @avoid_circular
@@ -97,13 +98,24 @@ class GenomeTrackLayerState(MatplotlibLayerState):
             return self._cache[1]
         chr, start, end, loop_count = key
 
+        
         if isinstance(self.layer, Subset):
+            print(f"In isinstance: {self.layer.subset_state}")
             data = self.layer.data
             subset_state = self.layer.subset_state
+            #if isinstance(self.layer, ElementSubsetState):
+            #    print("Found an ElementSubsetState")
+            if not isinstance(subset_state, GenomicRangeSubsetState):
+                try:
+                    subset_state = self.layer.subset_state.to_genome_range()
+                except AttributeError:
+                    pass
+            #else:
+                
         else:
             data = self.layer
             subset_state = None
-
+        print(f'final subset_state = {subset_state}')
         if isinstance(data, BedPeData):
             df = data.profile(chr, start, end, target=loop_count, subset_state=subset_state)
             self.viewer_state.expand_y_limits(0, end - start)
