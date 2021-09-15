@@ -1,5 +1,6 @@
 from glue.core.state import SubsetState
 from glue.core.contracts import contract
+from glue.core.exceptions import IncompatibleAttribute
 
 import numpy as np
 
@@ -8,7 +9,7 @@ class GenomicMulitRangeSubsetState(SubsetState):
     
     Currently this assumes that we define multiple GenomeRangeSubsetStates
     only as OR states from the Table Viewer; we should make this more
-    general. 
+    general and probably this should be built as a bunch of GenomicRangeSubsetStates
     
     """
     def __init__(self, subsets):
@@ -28,17 +29,25 @@ class GenomicMulitRangeSubsetState(SubsetState):
     def copy(self):
         return GenomicMulitRangeSubsetState(self._subsets)
             
-    #@contract(data='isinstance(Data)', view='array_view')
-    #def to_mask(self, data, view=None):
-    #    """
-    #    This is specific to tabular data, and we should make it more general
-    #    """
-    #    x = data
-    #    chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
-    #    result = (x['chr'].codes == chrom_code) & (x['start'] >= self.start) & (x['start'] <= self.end)
-    #    if view is not None:
-    #        result = result[view]
-    #    return result
+    @contract(data='isinstance(Data)', view='array_view')
+    def to_mask(self, data, view=None):
+        """
+        This is specific to tabular data, and we should make it more general
+        """
+        print("Inside my custom to_mask method for GenomicMultiRangeSubsetState...")
+
+        #chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
+        result = np.zeros(data.components[0].shape)
+        try:
+            for c,s,e in zip(self.chroms, self.starts, self.ends):
+                result |= (data['chr'] == c) & (data['start'] >= s) & (data['start'] <= e)
+        except:
+            raise IncompatibleAttribute()            
+        if view is not None:
+            result = result[view]
+        #if result is None:
+        #    result = [False] #Not sure why we need this check sometimes, but we do
+        return result
 
 
 
@@ -61,21 +70,24 @@ class GenomicRangeSubsetState(SubsetState):
         """
         This is specific to tabular data, and we should make it more general
         """
-        #print(view)
-        x = data#[view]
         #print("Inside my custom to_mask method...")
-        #print(x)
+        #print(view)
+        #print(data)
         #print(self.chrom)
         #print(self.start)
         #print(self.end)
         #chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
-        result = (x['chr'] == self.chrom) & (x['start'] >= self.start) & (x['start'] <= self.end)
+        try:
+            result = (data['chr'] == self.chrom) & (data['start'] >= self.start) & (data['start'] <= self.end)
+        except:
+             raise IncompatibleAttribute()
         #print(result)
         if view is not None:
             result = result[view]
         #print(result)
-        if result == None:
-            return False #Not sure why we need this check sometimes, but we do
+        #if result is None:
+        #    result = [False] #Not sure why we need this check sometimes, but we do
+        #print(result)
         return result
 
 
