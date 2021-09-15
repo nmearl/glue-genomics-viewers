@@ -275,7 +275,10 @@ class BedgraphData(GenomicData):
         elif isinstance(subset_state, GenomicMulitRangeSubsetState): 
             mask = result.chrom.eq('junk')
             for c,s,e in zip(subset_state.chroms, subset_state.starts, subset_state.ends):
-                mask |= result.chrom.eq(c) & result.start.ge(s) & result.stop.le(e) #This assumes an OR state, but it could be more complicated
+                if (subset_state.chroms != chr) or (subset_state.starts > end) or (subset_state.ends < start):
+                    continue #Avoid making a really long query
+                else:
+                    mask |= result.chrom.eq(c) & result.start.ge(s) & result.stop.le(e) #This assumes an OR state, but it could be more complicated
             return result.loc[mask]
         else:
             # TODO: implement more general subset filtering.
@@ -305,6 +308,23 @@ class BedPeData(GenomicData):
                     result.end2.le(e)
                 )
             ]
+        elif isinstance(subset_state, GenomicMulitRangeSubsetState): 
+            mask = result.chrom1.eq('junk')
+            for c,s,e in zip(subset_state.chroms, subset_state.starts, subset_state.ends):
+                if (subset_state.chroms != chr) or (subset_state.starts > end) or (subset_state.ends < start):
+                    continue #Avoid making a really long query
+                else:
+                    mask |= ((
+                            result.chrom1.eq(c) & 
+                            result.start1.ge(s) & 
+                            result.end1.le(e)) |
+                            (
+                            result.chrom2.eq(c) & 
+                            result.start2.ge(s) & 
+                            result.end2.le(e)
+                        )) #This assumes an OR state, but it could be more complicated
+            return result.loc[mask]
+
         else:
             # TODO: implement more general subset filtering.
             return result.head(0)
