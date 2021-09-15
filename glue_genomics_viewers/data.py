@@ -261,7 +261,12 @@ class BedgraphData(GenomicData):
     engine_cls = BedGraph
 
     def profile(self, chr, start, end, subset_state=None, **kwargs):
-        result = self.engine.query(GenomeRange(f'chr{chr}', int(start), int(end)))
+        
+        query_chrom = f'chr{chr}'
+        query_start = int(start)
+        query_end   = int(end)
+        
+        result = self.engine.query(GenomeRange(query_chrom, query_start, query_end))
         if subset_state is None:
             return result
 
@@ -275,7 +280,7 @@ class BedgraphData(GenomicData):
         elif isinstance(subset_state, GenomicMulitRangeSubsetState): 
             mask = result.chrom.eq('junk')
             for c,s,e in zip(subset_state.chroms, subset_state.starts, subset_state.ends):
-                if (subset_state.chroms != chr) or (subset_state.starts > end) or (subset_state.ends < start):
+                if (c != query_chrom) or (s > query_end) or (e < query_start):
                     continue #Avoid making a really long query
                 else:
                     mask |= result.chrom.eq(c) & result.start.ge(s) & result.stop.le(e) #This assumes an OR state, but it could be more complicated
@@ -311,7 +316,7 @@ class BedPeData(GenomicData):
         elif isinstance(subset_state, GenomicMulitRangeSubsetState): 
             mask = result.chrom1.eq('junk')
             for c,s,e in zip(subset_state.chroms, subset_state.starts, subset_state.ends):
-                if (subset_state.chroms != chr) or (subset_state.starts > end) or (subset_state.ends < start):
+                if (c != query_chrom) or (s > query_end) or (e < query_start):
                     continue #Avoid making a really long query
                 else:
                     mask |= ((
