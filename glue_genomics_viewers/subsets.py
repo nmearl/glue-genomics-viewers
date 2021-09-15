@@ -68,11 +68,14 @@ class GenomicRangeSubsetState(SubsetState):
         #print(self.chrom)
         #print(self.start)
         #print(self.end)
-        chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
-        result = (x['chr'].codes == chrom_code) & (x['start'] >= self.start) & (x['start'] <= self.end)
+        #chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
+        result = (x['chr'] == self.chrom) & (x['start'] >= self.start) & (x['start'] <= self.end)
+        #print(result)
         if view is not None:
             result = result[view]
         #print(result)
+        if result == None:
+            return False #Not sure why we need this check sometimes, but we do
         return result
 
 
@@ -81,7 +84,7 @@ class GenomicRangeSubsetState(SubsetState):
         This is specific to tabular data, and we should make it more general.
         """
         #print("Inside my custom to_index_list method...")
-        result = (data['chr'] == self.chrom) & (data['start'] >= self.start) & (data['start'] <= self.start)
+        result = (data['chr'] == self.chrom) & (data['start'] >= self.start) & (data['start'] <= self.end)
         #print(result)
         return result
         #chr_code = np.where(data['chr'].categories ==self.chrom)[0][0]
