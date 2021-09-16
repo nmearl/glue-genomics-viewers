@@ -80,8 +80,6 @@ class GenomeTrackLayerState(MatplotlibLayerState):
             print(f"In isinstance: {self.layer.subset_state}")
             data = self.layer.data
             subset_state = self.layer.subset_state
-            #if isinstance(self.layer, ElementSubsetState):
-            #    print("Found an ElementSubsetState")
             if not isinstance(subset_state, GenomicRangeSubsetState):
                 try:
                     subset_state = self.layer.subset_state.to_genome_range()
