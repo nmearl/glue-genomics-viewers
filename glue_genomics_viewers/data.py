@@ -3,10 +3,11 @@ from subprocess import check_call, PIPE, Popen
 import os
 import logging
 
+import numpy as np
 import pandas as pd
 from glue.core import Data
 
-from .subsets import GenomicRangeSubsetState
+from .subsets import GenomicRangeSubsetState, GenomicMulitRangeSubsetState
 
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class BedGraph:
 
         This operation is currently very slow (10+ minutes / GB)
         """
-        os.mkdirs(os.path.join(self.path.dirname(self.path), '.glue_index'), exists_ok=True)
+        os.makedirs(os.path.join(os.path.dirname(self.path), '.glue_index'), exist_ok=True)
         outpaths = [self._level_path(i) for i in range(self.depth)]
         if all(os.path.exists(p + '.bgz.tbi') for p in outpaths):
             logger.debug("Already indexed")
@@ -56,7 +57,7 @@ class BedGraph:
 
         downsample_factors = [self.downsample_factor ** (i + 1) for i in range(self.depth)]
         for path, factor in zip(outpaths, downsample_factors):
-            decimated = pd.DataFrame(slf.decimate((rec for _, rec in df.iterrows()), factor),
+            decimated = pd.DataFrame(self.decimate((rec for _, rec in df.iterrows()), factor),
                                      columns=['chrom', 'start', 'stop', 'value'])
             decimated.to_csv(path, sep='\t', index=False, header=False)
             df = decimated
@@ -262,7 +263,12 @@ class BedgraphData(GenomicData):
     engine_cls = BedGraph
 
     def profile(self, chr, start, end, subset_state=None, **kwargs):
-        result = self.engine.query(GenomeRange(f'chr{chr}', int(start), int(end)))
+        
+        query_chrom = f'chr{chr}'
+        query_start = int(start)
+        query_end   = int(end)
+        
+        result = self.engine.query(GenomeRange(query_chrom, query_start, query_end))
         if subset_state is None:
             return result
 
@@ -273,6 +279,14 @@ class BedgraphData(GenomicData):
                 result.start.ge(s) &
                 result.stop.le(e)
             ]
+        elif isinstance(subset_state, GenomicMulitRangeSubsetState): 
+            mask = result.chrom.eq('junk')
+            for c,s,e in zip(subset_state.chroms, subset_state.starts, subset_state.ends):
+                if (c != query_chrom) or (s > query_end) or (e < query_start):
+                    continue #Avoid making a really long query
+                else:
+                    mask |= result.chrom.eq(c) & result.start.ge(s) & result.stop.le(e) #This assumes an OR state, but it could be more complicated
+            return result.loc[mask]
         else:
             # TODO: implement more general subset filtering.
             return result.head(0)
@@ -301,6 +315,23 @@ class BedPeData(GenomicData):
                     result.end2.le(e)
                 )
             ]
+        elif isinstance(subset_state, GenomicMulitRangeSubsetState): 
+            mask = result.chrom1.eq('junk')
+            for c,s,e in zip(subset_state.chroms, subset_state.starts, subset_state.ends):
+                if (c != query_chrom) or (s > query_end) or (e < query_start):
+                    continue #Avoid making a really long query
+                else:
+                    mask |= ((
+                            result.chrom1.eq(c) & 
+                            result.start1.ge(s) & 
+                            result.end1.le(e)) |
+                            (
+                            result.chrom2.eq(c) & 
+                            result.start2.ge(s) & 
+                            result.end2.le(e)
+                        )) #This assumes an OR state, but it could be more complicated
+            return result.loc[mask]
+
         else:
             # TODO: implement more general subset filtering.
             return result.head(0)
