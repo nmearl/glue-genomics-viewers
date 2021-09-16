@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+from matplotlib.axes._axes import _TransformedBoundsLocator
+
+from glue.core import Data
 from glue.viewers.matplotlib.layer_artist import MatplotlibLayerArtist
 from glue.utils import defer_draw
 from matplotlib.patches import Arc
@@ -12,12 +15,43 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
 
     def __init__(self, axes, viewer_state, layer_state=None, layer=None):
 
+        x_min, x_max = viewer_state.x_min, viewer_state.x_max
+        self.track_key = id(layer.data)
+        self.track_axes = self._setup_track_axes(axes, self.track_key, viewer_state)
         super().__init__(axes, viewer_state, layer_state=layer_state, layer=layer)
+
+        # View limits get reset to (0, 1) during setup somewhere, restore.
+        viewer_state.x_min = x_min
+        viewer_state.x_max = x_max
 
         # Watch for changes in the viewer state which would require the
         # layers to be redrawn
         self._viewer_state.add_global_callback(self._handle_state_change)
         self.state.add_global_callback(self._handle_state_change)
+
+
+    @staticmethod
+    def _setup_track_axes(axes, key, viewer_state):
+        """Configure a child Axes representing `layer` as a single track."""
+        if key in viewer_state.tracks:
+            return viewer_state.tracks[key]
+
+        axes.get_yaxis().set_visible(False)
+        axes.spines['right'].set_visible(False)
+        axes.spines['top'].set_visible(False)
+        axes.spines['left'].set_visible(False)
+
+        xlim = axes.get_xlim()
+        result = axes.inset_axes([0, .1 * len(viewer_state.tracks) + .3, 1, .1])
+        axes.get_shared_x_axes().join(result, axes)
+        axes.set_xlim(*xlim)
+
+        result.get_xaxis().set_visible(False)
+        result.get_shared_x_axes().join(axes, result)
+        result.spines['right'].set_visible(False)
+        result.spines['top'].set_visible(False)
+        viewer_state.tracks[key] = result
+        return result
 
     def _handle_state_change(self, force=False, **kwargs):
         if (
@@ -46,6 +80,13 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
         self._update_plot_data(force=True)
         self.redraw()
 
+    def _update_visual_attributes(self):
+        if not self.enabled:
+            return
+
+        if isinstance(self.layer, Data):
+            self.track_axes.set_visible(self.state.visible)
+
 
 class GenomeProfileLayerArtist(GenomeTrackLayerArtist):
 
@@ -59,15 +100,19 @@ class GenomeProfileLayerArtist(GenomeTrackLayerArtist):
         y = np.vstack([df.value * 0, df.value, df.value, df.value * 0]).T.ravel()
 
         if not self.mpl_artists:
-            artist = self.axes.fill_between(x, y)
+            artist = self.track_axes.fill_between(x, y)
             self.mpl_artists.append(artist)
         else:
             self.mpl_artists[-1].set_verts([np.column_stack([x, y])])
+
+        if isinstance(self.layer, Data):
+            self.track_axes.set_ylim(y.min(), y.max())
 
         self.redraw()
 
     @defer_draw
     def _update_visual_attributes(self):
+        super()._update_visual_attributes()
 
         if not self.enabled:
             return
@@ -84,14 +129,14 @@ class GenomeLoopLayerArtist(GenomeTrackLayerArtist):
 
     @defer_draw
     def _update_artists(self):
+        for artist in self.mpl_artists:
+            artist.remove()
+        self.mpl_artists = []
+
         df: pd.DataFrame = self.state.viz_data
         if df.empty:
             return
 
-        for artist in self.mpl_artists:
-            artist.remove()
-
-        self.mpl_artists = []
         df['diameter'] = (df.start2 + df.end2) / 2. - (df.start1 + df.end1) / 2.
 
         for _, rec in df.iterrows():
@@ -103,13 +148,17 @@ class GenomeLoopLayerArtist(GenomeTrackLayerArtist):
                 height, 0, 0, 180, lw=width, alpha=0.3
             )
 
-            self.axes.add_patch(arc)
+            self.track_axes.add_patch(arc)
             self.mpl_artists.append(arc)
+
+        if isinstance(self.layer, Data):
+            self.track_axes.set_ylim(0, df.diameter.max() / 2)
 
         self.redraw()
 
     @defer_draw
     def _update_visual_attributes(self):
+        super()._update_visual_attributes()
 
         if not self.enabled:
             return
