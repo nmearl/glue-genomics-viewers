@@ -301,6 +301,7 @@ class BedPeData(GenomicData):
         query_start = int(start)
         query_end   = int(end)
         result = self.engine.query(GenomeRange(query_chrom, query_start, query_end), target=target, verbose=False)
+        print(len(result))
         if subset_state is None:
             return result
 

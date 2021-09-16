@@ -68,10 +68,10 @@ def demo():
         d1,
         d2,
         #d_gene,
-        BedgraphData(bedgraph),
-        BedPeData(bedpe),
+        BedgraphData(bedgraph,label='CTCF_ChIA-PET_coverage'),
+        BedPeData(bedpe,label='CTCF_ChIA-PET_loops'),
     ])
-    dc['mm10_TAD'] = tad_data
+    #dc['mm10_TAD'] = tad_data
     ga = GlueApplication(dc)
     dc[0].join_on_key(dc[1],'exp_ids','orsam_id')
     #dc[0].join_on_key(dc[2],'gene_ids','gene_ids')

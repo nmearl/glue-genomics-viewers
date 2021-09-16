@@ -10,6 +10,7 @@ from glue.core import Data
 from glue.core.decorators import clear_cache
 from glue.core.message import NumericalDataChangedMessage
 
+from glue_tree_viewer.viewer import TreeDataViewer
 from .heatmap_coords import HeatmapCoords
 import numpy as np
 import ete3
@@ -73,7 +74,7 @@ def tree_process(newickstr, title):
     import ete3
     #result = Data(newickstr=[newickstr])
     result = Data()
-    result.label = "%s [tree data]" % title
+    result.label = "%s" % title
     tree = ete3.Tree(newickstr, format=determine_format(newickstr))
     result.tdata = tree
     result.tree_component_id = "tree nodes %s" % result.uuid
@@ -139,10 +140,10 @@ class ClusterTool(Tool):
             if not isinstance(component, PixelComponentID):  # Ignore pixel components
                 data.update_components({component:pd.DataFrame(data.get_data(component)).iloc[new_row_ind,new_col_ind]})
         
-        print(g.dendrogram_col.linkage)
+        #print(g.dendrogram_col.linkage)
         yo = g.dendrogram_col.linkage
-        yo[:,2] = yo[:,2]/np.max(yo[:,2]) #Normalize by max
-        print(yo)
+        #yo[:,2] = yo[:,2]/np.max(yo[:,2]) #Normalize by max
+        #print(yo)
         tree = hierarchy.to_tree(yo, False)
         newicktree = getNewick(tree, "", tree.dist, orig_xticks)
         d2 = tree_process(newicktree,"experiment-tree")
@@ -151,6 +152,9 @@ class ClusterTool(Tool):
         
         data.join_on_key(d2, 'exp_ids', d2.tree_component_id)
         
+        
+        tree = self.viewer.session.application.new_data_viewer(TreeDataViewer)
+        tree.add_data(d2)
         # We might need to update join_on_key mappings after we re-order things
         # for other_dataset, key_join in data._key_joins.items():
         #    print(f'other_dataset = {other_dataset}')

@@ -21,9 +21,9 @@ class GenomicMulitRangeSubsetState(SubsetState):
             self.chroms.append(subset.chrom)
             self.starts.append(subset.start)
             self.ends.append(subset.end)
-        print(f'Making a subset from {subsets}')
-        print(f'self.chroms = {self.chroms}')
-        print(f'self.starts = {self.starts}')
+        #print(f'Making a subset from {subsets}')
+        #print(f'self.chroms = {self.chroms}')
+        #print(f'self.starts = {self.starts}')
 
             
     def copy(self):
@@ -34,7 +34,7 @@ class GenomicMulitRangeSubsetState(SubsetState):
         """
         This is specific to tabular data, and we should make it more general
         """
-        print("Inside my custom to_mask method for GenomicMultiRangeSubsetState...")
+        #print("Inside my custom to_mask method for GenomicMultiRangeSubsetState...")
 
         #chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
         result = np.zeros(data.components[0].shape)
