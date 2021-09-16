@@ -67,14 +67,14 @@ def demo():
     dc = DataCollection([
         d1,
         d2,
-        d_gene,
+        #d_gene,
         BedgraphData(bedgraph),
         BedPeData(bedpe),
     ])
     dc['mm10_TAD'] = tad_data
     ga = GlueApplication(dc)
     dc[0].join_on_key(dc[1],'exp_ids','orsam_id')
-    dc[0].join_on_key(dc[2],'gene_ids','gene_ids')
+    #dc[0].join_on_key(dc[2],'gene_ids','gene_ids')
 
     scatter = ga.new_data_viewer(HeatmapViewer)
     scatter.add_data(d1)

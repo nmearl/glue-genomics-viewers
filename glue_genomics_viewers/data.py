@@ -295,7 +295,11 @@ class BedPeData(GenomicData):
     engine_cls = BedPe
 
     def profile(self, chr, start, end, subset_state=None, target=100, **kwargs):
-        result = self.engine.query(GenomeRange(f'chr{chr}', int(start), int(end)), target=target, verbose=False)
+        query_chrom = f'chr{chr}'
+        query_start = int(start)
+        query_end   = int(end)
+
+        result = self.engine.query(GenomeRange(query_chrom, query_start, query_end), target=target, verbose=False)
         if subset_state is None:
             return result
 
