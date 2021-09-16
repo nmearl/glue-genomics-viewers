@@ -9,6 +9,8 @@ from glue.core import Data
 
 from .subsets import GenomicRangeSubsetState, GenomicMulitRangeSubsetState
 
+from ncls import NCLS #For fast overlaps
+
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +158,7 @@ class BedPe:
     depth = 7
 
     def index(self):
-        os.mkdirs(os.path.join(self.path.dirname(self.path), '.glue_index'), exists_ok=True)
+        os.makedirs(os.path.join(os.path.dirname(self.path), '.glue_index'), exist_ok=True)
         outpaths = [self._level_path(i) for i in range(self.depth)]
         if all(os.path.exists(p + '.bgz.px2') for p in outpaths):
             logger.debug("Already indexed")
@@ -301,7 +303,7 @@ class BedPeData(GenomicData):
         query_start = int(start)
         query_end   = int(end)
         result = self.engine.query(GenomeRange(query_chrom, query_start, query_end), target=target, verbose=False)
-        print(len(result))
+        #print(len(result))
         if subset_state is None:
             return result
 
@@ -319,22 +321,18 @@ class BedPeData(GenomicData):
                     result.end2.le(e)
                 )
             ]
-        elif isinstance(subset_state, GenomicMulitRangeSubsetState): 
-            mask = result.chrom1.eq('junk')
-            for c,s,e in zip(subset_state.chroms, subset_state.starts, subset_state.ends):
-                if (c != query_chrom) or (s > query_end) or (e < query_start):
-                    continue #Avoid making a really long query
-                else:
-                    mask |= ((
-                            result.chrom1.eq(c) & 
-                            result.start1.ge(s) & 
-                            result.end1.le(e)) |
-                            (
-                            result.chrom2.eq(c) & 
-                            result.start2.ge(s) & 
-                            result.end2.le(e)
-                        )) #This assumes an OR state, but it could be more complicated
-            return result.loc[mask]
+        elif isinstance(subset_state, GenomicMulitRangeSubsetState):
+            # A bit convoluted but reasonably performant
+            ncls1 = NCLS(result.start1,result.end1,result.index.values) #Assumes we're in the right chromosome
+            ncls2 = NCLS(result.start2,result.end2,result.index.values)
+            
+            subset_indices = pd.Series(list(range(len(subset_state.starts)))) #NCLS requires this, though we could do it in the subset object
+            subset_starts = pd.Series(subset_state.starts)
+            subset_ends = pd.Series(subset_state.ends)
+            l_idxs_1, r_idxs_1 = ncls1.all_overlaps_both(subset_starts.values, subset_ends.values, subset_indices.values)
+            l_idxs_2, r_idxs_2 = ncls2.all_overlaps_both(subset_starts.values, subset_ends.values, subset_indices.values)
+            both_ends = list(set(r_idxs_1) & set(r_idxs_2))
+            return result.loc[both_ends]
 
         else:
             # TODO: implement more general subset filtering.
