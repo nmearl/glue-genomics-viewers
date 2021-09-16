@@ -1,4 +1,4 @@
-from matplotlib.axes._axes import _TransformedBoundsLocator
+from matplotlib.axes._base import _TransformedBoundsLocator
 import numpy as np
 from glue.utils import defer_draw, decorate_all_methods
 from glue.viewers.matplotlib.qt.data_viewer import MatplotlibDataViewer
