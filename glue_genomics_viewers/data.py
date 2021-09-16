@@ -83,10 +83,11 @@ class BedGraph:
             pd.to_numeric, errors='ignore')
 
     def _level_path(self, level):
-        if level is None:
-            return self.path
-
         a, b = os.path.split(self.path)
+
+        if level is None:
+            return os.path.join(a, '.glue_index', b)
+
         return os.path.join(a, '.glue_index', '%s.dec_%i_%i' % (b, self.downsample_factor, level))
 
     @staticmethod
@@ -212,10 +213,11 @@ class BedPe:
         return df
 
     def _level_path(self, level):
-        if level is None:
-            return self.path
 
         a, b = os.path.split(self.path)
+        if level is None:
+            return os.path.join(a, '.glue_index', b)
+
         return os.path.join(a, '.glue_index', '%s.dec_%i_%i' % (b, self.downsample_factor, level))
 
     @staticmethod
