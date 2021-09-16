@@ -10,6 +10,7 @@ from glue.utils.decorators import avoid_circular
 from glue.utils import defer_draw, decorate_all_methods
 
 from ..data import BedPeData
+from ..subsets import GenomicRangeSubsetState
 
 __all__ = ['GenomeTrackState']
 
