@@ -14,6 +14,14 @@ def df_to_data(obj,label=None):
         result.add_component(obj[c], str(c))
     return result
 
+def classify(row):
+    if row['state'].startswith('Tss'):
+        val = 'Promoter'
+    elif row['state'].startswith('Enh'):
+        val = 'Enhancer'
+    else:
+        val = 'Other'
+    return val
 
 def demo():
 
@@ -22,13 +30,22 @@ def demo():
 
     setup()
 
-    bedgraph = '/Volumes/GoogleDrive/My Drive/JAX-Test-Data/minji/MCF10A_CTCF_ChIA-PET_Rep1_coverage_ENCFF614DRY.chr3.bedgraph'
-    bedpe = '/Volumes/GoogleDrive/My Drive/JAX-Test-Data/minji/MCF10A_CTCF_ChIA-PET_Rep1_loops_ENCFF310MTX.chr3.bedpe'
+    bedgraph = '/Users/jfoster/Desktop/JAX/TestData/minji/MCF10A_CTCF_ChIA-PET_Rep1_coverage_ENCFF614DRY.chr3.bedgraph'
+    bedpe = '/Users/jfoster/Desktop/JAX/TestData/minji/MCF10A_CTCF_ChIA-PET_Rep1_loops_ENCFF310MTX.chr3.bedpe'
     #bedgraph = '/Users/jfoster/Desktop/sep17-demo-data/mm10_coverage_M.bedgraph'
     tadfile = '/Users/jfoster/Desktop/JAX/TestData/atac_rna/Test_TAD.mm10Lifted.bed'
     tad_data = pd.read_csv(tadfile,names=['chr','start','end','num','name'],sep='\t')
+    
+    enhancer_file = '/Users/jfoster/Desktop/JAX/TestData/minji_loops/Enhancers_and_Promoters.bed'
+    enhancer_data = pd.read_csv(enhancer_file,names=['chr','start','end','state'],usecols=['chr','start','end','state'],sep='\t')
+    enhancer_data = enhancer_data[enhancer_data['chr']=='chr3']
+    enhancer_data['major_states'] =  enhancer_data.apply(classify,axis=1)
     #yo = BedgraphData(bedgraph)
     #yo.engine.index()
+    
+    #yo = BedPeData(bedpe)
+    #yo.engine.index()
+
     
     df_counts = pd.read_csv('/Users/jfoster/Desktop/JAX/TestData/three_bears/three_bears_liver_rnaseq_matrix_counts.txt', sep='\t')
     counts_data = np.array(df_counts)
@@ -69,9 +86,10 @@ def demo():
         d2,
         #d_gene,
         BedgraphData(bedgraph,label='CTCF_ChIA-PET_coverage'),
+        #BedgraphData(bedgraph,label='Moredata'),
         BedPeData(bedpe,label='CTCF_ChIA-PET_loops'),
     ])
-    #dc['mm10_TAD'] = tad_data
+    dc['Chromatin State'] = enhancer_data
     ga = GlueApplication(dc)
     dc[0].join_on_key(dc[1],'exp_ids','orsam_id')
     #dc[0].join_on_key(dc[2],'gene_ids','gene_ids')
