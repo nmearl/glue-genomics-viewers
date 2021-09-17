@@ -326,9 +326,11 @@ class BedPeData(GenomicData):
             ncls1 = NCLS(result.start1,result.end1,result.index.values) #Assumes we're in the right chromosome
             ncls2 = NCLS(result.start2,result.end2,result.index.values)
             
+            #We could first filter to remove subset_states outside the range entirely
             subset_indices = pd.Series(list(range(len(subset_state.starts)))) #NCLS requires this, though we could do it in the subset object
             subset_starts = pd.Series(subset_state.starts)
             subset_ends = pd.Series(subset_state.ends)
+            
             l_idxs_1, r_idxs_1 = ncls1.all_overlaps_both(subset_starts.values, subset_ends.values, subset_indices.values)
             l_idxs_2, r_idxs_2 = ncls2.all_overlaps_both(subset_starts.values, subset_ends.values, subset_indices.values)
             both_ends = list(set(r_idxs_1) & set(r_idxs_2))

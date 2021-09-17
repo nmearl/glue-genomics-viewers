@@ -86,6 +86,7 @@ def demo():
         d2,
         #d_gene,
         BedgraphData(bedgraph,label='CTCF_ChIA-PET_coverage'),
+        #BedgraphData(bedgraph,label='Moredata'),
         BedPeData(bedpe,label='CTCF_ChIA-PET_loops'),
     ])
     dc['Chromatin State'] = enhancer_data
