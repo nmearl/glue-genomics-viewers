@@ -14,6 +14,8 @@ from glue_tree_viewer.viewer import TreeDataViewer
 from .heatmap_coords import HeatmapCoords
 import numpy as np
 import ete3
+import skbio
+
 
 
 def getNewick(node, newick, parentdist, leaf_names):
@@ -75,14 +77,18 @@ def tree_process(newickstr, title):
     #result = Data(newickstr=[newickstr])
     result = Data()
     result.label = "%s" % title
-    tree = ete3.Tree(newickstr, format=determine_format(newickstr))
+    #tree = ete3.Tree(newickstr, format=determine_format(newickstr))
+    tree = ete3.Tree()
+    tree = tree.from_skbio(newickstr, map_attributes=["value"])
+
+    
     result.tdata = tree
     result.tree_component_id = "tree nodes %s" % result.uuid
 
     # ignore nameless nodes as they cannot be indexed
-    names = [n.name for n in tree.traverse("postorder") if n.name != ""]
+    names = [n.name for n in tree.traverse("postorder") if ((n.name != "") and (n.name !=None))]
 
-    allint = all(name.isnumeric() for name in names)
+    allint = False#all(name.isnumeric() for name in names)
 
     nodes = np.array([(int(name) if allint else name) for name in names])
 
@@ -141,20 +147,35 @@ class ClusterTool(Tool):
                 data.update_components({component:pd.DataFrame(data.get_data(component)).iloc[new_row_ind,new_col_ind]})
         
         #print(g.dendrogram_col.linkage)
-        yo = g.dendrogram_col.linkage
+        column_dendrogram = g.dendrogram_col.linkage
+        row_dendrogram = g.dendrogram_row.linkage
         #yo[:,2] = yo[:,2]/np.max(yo[:,2]) #Normalize by max
         #print(yo)
-        tree = hierarchy.to_tree(yo, False)
-        newicktree = getNewick(tree, "", tree.dist, orig_xticks)
-        d2 = tree_process(newicktree,"experiment-tree")
+        
+        bioTree_col = skbio.tree.TreeNode.from_linkage_matrix(column_dendrogram,id_list=orig_xticks)
+        bioTree_row = skbio.tree.TreeNode.from_linkage_matrix(row_dendrogram,id_list=orig_yticks)
+        #col_tree = hierarchy.to_tree(column_dendrogram, False)
+        #row_tree = hierarchy.to_tree(row_dendrogram, False)
+        
+        #newick_col_tree = getNewick(col_tree, "", col_tree.dist, orig_xticks)
+        #newick_row_tree = getNewick(row_tree, "", row_tree.dist, orig_yticks)
+        
+        col_dendro = tree_process(bioTree_col,"experiment-dendro")
+        row_dendro = tree_process(bioTree_row,"gene-dendro")
+
+        #col_dendro = tree_process(newick_col_tree,"experiment-dendro")
+        #row_dendro = tree_process(newick_row_tree,"gene-dendro")
+
         datacoll = self.viewer.session.data_collection
-        datacoll.append(d2)
+        datacoll.append(row_dendro)
+        datacoll.append(col_dendro)
         
-        data.join_on_key(d2, 'exp_ids', d2.tree_component_id)
-        
+        data.join_on_key(col_dendro, 'exp_ids', col_dendro.tree_component_id)
+        data.join_on_key(row_dendro, 'gene_ids', row_dendro.tree_component_id)
+
         
         tree = self.viewer.session.application.new_data_viewer(TreeDataViewer)
-        tree.add_data(d2)
+        tree.add_data(col_dendro)
         # We might need to update join_on_key mappings after we re-order things
         # for other_dataset, key_join in data._key_joins.items():
         #    print(f'other_dataset = {other_dataset}')
