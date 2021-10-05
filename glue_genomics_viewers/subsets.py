@@ -32,7 +32,10 @@ class GenomicMulitRangeSubsetState(SubsetState):
     @contract(data='isinstance(Data)', view='array_view')
     def to_mask(self, data, view=None):
         """
-        This is specific to tabular data, and we should make it more general
+        This assumes that the data we wish to express
+        this subset on has certain components to wit either:
+        chr, start, end: generic BED file regions
+        chr, genome_position: a 3D GNOME model
         """
         #print("Inside my custom to_mask method for GenomicMultiRangeSubsetState...")
 
@@ -42,7 +45,11 @@ class GenomicMulitRangeSubsetState(SubsetState):
             for c,s,e in zip(self.chroms, self.starts, self.ends):
                 result |= (data['chr'] == c) & (data['start'] >= s) & (data['start'] <= e)
         except:
-            raise IncompatibleAttribute()            
+            try:
+                for c,s,e in zip(self.chroms, self.starts, self.ends):
+                    result |= (data['chr'] == c) & (data['genome_position'] >= s) & (data['genome_position'] <= e)
+            except:
+                raise IncompatibleAttribute()            
         if view is not None:
             result = result[view]
         #if result is None:
@@ -68,7 +75,10 @@ class GenomicRangeSubsetState(SubsetState):
     @contract(data='isinstance(Data)', view='array_view')
     def to_mask(self, data, view=None):
         """
-        This is specific to tabular data, and we should make it more general
+        This assumes that the data we wish to express
+        this subset on has certain components to wit either:
+        chr, start, end: generic BED file regions
+        chr, genome_position: a 3D GNOME model
         """
         #print("Inside my custom to_mask method...")
         #print(view)
@@ -78,25 +88,31 @@ class GenomicRangeSubsetState(SubsetState):
         #print(self.end)
         #chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
         try:
+            #print("Trying this")
             result = (data['chr'] == self.chrom) & (data['start'] >= self.start) & (data['start'] <= self.end)
         except:
-             raise IncompatibleAttribute()
-        #print(result)
+            try:
+                #print("Now trying this")
+                result = (data['chr'] == self.chrom) & (data['genome_position'] >= self.start) & (data['genome_position'] <= self.end)
+            except:
+                raise IncompatibleAttribute()
         if view is not None:
             result = result[view]
-        #print(result)
-        #if result is None:
-        #    result = [False] #Not sure why we need this check sometimes, but we do
-        #print(result)
         return result
 
 
     def to_index_list(self, data):
         """
-        This is specific to tabular data, and we should make it more general.
+        This assumes that the data we wish to express
+        this subset on has certain components to wit either:
+        chr, start, end: generic BED file regions
+        chr, genome_position: a 3D GNOME model
         """
         #print("Inside my custom to_index_list method...")
-        result = (data['chr'] == self.chrom) & (data['start'] >= self.start) & (data['start'] <= self.end)
+        try:
+            result = (data['chr'] == self.chrom) & (data['start'] >= self.start) & (data['start'] <= self.end)
+        except:
+            result = (data['chr'] == self.chrom) & (data['genome_position'] >= self.start) & (data['genome_position'] <= self.end)
         #print(result)
         return result
         #chr_code = np.where(data['chr'].categories ==self.chrom)[0][0]
