@@ -262,6 +262,8 @@ class GenomicData(Data):
 
 
 class BedgraphData(GenomicData):
+    """Glue Data wrapper for BedGraph files."""
+
     engine_cls = BedGraph
 
     def profile(self, chr, start, end, subset_state=None, **kwargs):
@@ -290,12 +292,15 @@ class BedgraphData(GenomicData):
                     mask |= result.chrom.eq(c) & result.start.ge(s) & result.stop.le(e) #This assumes an OR state, but it could be more complicated
             return result.loc[mask]
         else:
+            #try:
+            #    subset_state.to_index_list()
+            #except:
             # TODO: implement more general subset filtering.
             return result.head(0)
 
 
 class BedPeData(GenomicData):
-    """Glue Data wrapper for BedGraph files."""
+    """Glue Data wrapper for BedPe files."""
     engine_cls = BedPe
 
     def profile(self, chr, start, end, subset_state=None, target=100, **kwargs):
@@ -333,7 +338,7 @@ class BedPeData(GenomicData):
             
             l_idxs_1, r_idxs_1 = ncls1.all_overlaps_both(subset_starts.values, subset_ends.values, subset_indices.values)
             l_idxs_2, r_idxs_2 = ncls2.all_overlaps_both(subset_starts.values, subset_ends.values, subset_indices.values)
-            both_ends = list(set(r_idxs_1) & set(r_idxs_2))
+            both_ends = list(set(r_idxs_1) | set(r_idxs_2))
             return result.loc[both_ends]
 
         else:
