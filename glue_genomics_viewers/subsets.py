@@ -21,10 +21,6 @@ class GenomicMulitRangeSubsetState(SubsetState):
             self.chroms.append(subset.chrom)
             self.starts.append(subset.start)
             self.ends.append(subset.end)
-        #print(f'Making a subset from {subsets}')
-        #print(f'self.chroms = {self.chroms}')
-        #print(f'self.starts = {self.starts}')
-
             
     def copy(self):
         return GenomicMulitRangeSubsetState(self._subsets)
@@ -37,9 +33,6 @@ class GenomicMulitRangeSubsetState(SubsetState):
         chr, start, end: generic BED file regions
         chr, genome_position: a 3D GNOME model
         """
-        #print("Inside my custom to_mask method for GenomicMultiRangeSubsetState...")
-
-        #chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
         result = np.zeros(data.components[0].shape)
         try:
             for c,s,e in zip(self.chroms, self.starts, self.ends):
@@ -52,8 +45,6 @@ class GenomicMulitRangeSubsetState(SubsetState):
                 raise IncompatibleAttribute()            
         if view is not None:
             result = result[view]
-        #if result is None:
-        #    result = [False] #Not sure why we need this check sometimes, but we do
         return result
 
 
@@ -80,19 +71,10 @@ class GenomicRangeSubsetState(SubsetState):
         chr, start, end: generic BED file regions
         chr, genome_position: a 3D GNOME model
         """
-        #print("Inside my custom to_mask method...")
-        #print(view)
-        #print(data)
-        #print(self.chrom)
-        #print(self.start)
-        #print(self.end)
-        #chrom_code = np.where(x['chr'].categories ==self.chrom)[0][0]
         try:
-            #print("Trying this")
             result = (data['chr'] == self.chrom) & (data['start'] >= self.start) & (data['start'] <= self.end)
         except:
             try:
-                #print("Now trying this")
                 result = (data['chr'] == self.chrom) & (data['genome_position'] >= self.start) & (data['genome_position'] <= self.end)
             except:
                 raise IncompatibleAttribute()
@@ -108,18 +90,12 @@ class GenomicRangeSubsetState(SubsetState):
         chr, start, end: generic BED file regions
         chr, genome_position: a 3D GNOME model
         """
-        #print("Inside my custom to_index_list method...")
         try:
             result = (data['chr'] == self.chrom) & (data['start'] >= self.start) & (data['start'] <= self.end)
         except:
-            result = (data['chr'] == self.chrom) & (data['genome_position'] >= self.start) & (data['genome_position'] <= self.end)
-        #print(result)
+            try:
+                result = (data['chr'] == self.chrom) & (data['genome_position'] >= self.start) & (data['genome_position'] <= self.end)
+            except:
+                raise IncompatibleAttribute()
         return result
-        #chr_code = np.where(data['chr'].categories ==self.chrom)[0][0]
-        
-        #x = data[data['chr']==self.chrom] #Ignore view for now...
-                 
-        #In theory this should require that 
 
-
-    # Todo: attempt to define to_mask and/or to_index_list? These can be expensive...
