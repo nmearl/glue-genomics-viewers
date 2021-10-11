@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from matplotlib.axes._axes import _TransformedBoundsLocator
+import math
+from matplotlib.ticker import ScalarFormatter
 
 from glue.core import Data
 from glue.viewers.matplotlib.layer_artist import MatplotlibLayerArtist
@@ -8,6 +9,71 @@ from glue.utils import defer_draw
 from matplotlib.patches import Arc
 
 from .state import GenomeTrackLayerState
+
+
+class GenomeTrackFormatter(ScalarFormatter):
+    """Format numbers in kdb/Mbp, instead of scientific notation"""
+
+    def format_data(self, value):
+        e = math.floor(math.log10(abs(value)))
+        s = round(value / 10**e, 10)
+        exponent = self._format_maybe_minus_and_locale("%d", e)
+        if e == 3:
+            suffix = ' kbp'
+        elif e == 4:
+            suffix = ' kbp'
+            s *= 10
+        elif e == 5:
+            suffix = ' kbp'
+            s *= 100
+        elif e == 6:
+            suffix = ' Mbp'
+        elif e == 7:
+            suffix = ' Mbp'
+            s *= 10
+        elif e == 8:
+            suffix = ' Mbp'
+            s *= 100
+        else:
+            suffix = f'e{exponent}'
+
+        significand = self._format_maybe_minus_and_locale(
+            "%d" if s % 1 == 0 else "%1.10f", s)
+        if e == 0:
+            return significand
+        return f"{significand}{suffix}"
+
+    def get_offset(self):
+        if len(self.locs) == 0:
+            return ''
+
+        s = ''
+        if self.orderOfMagnitude or self.offset:
+            offsetStr = ''
+            sciNotStr = ''
+            if self.offset:
+                print(self.offset)
+                offsetStr = self.format_data(self.offset)
+                if self.offset > 0:
+                    offsetStr = '+' + offsetStr
+            if self.orderOfMagnitude:
+                if self.orderOfMagnitude == 3:
+                    sciNotStr = ' kbp'
+                elif self.orderOfMagnitude == 4:
+                    sciNotStr = '10 kbp'
+                elif self.orderOfMagnitude == 5:
+                    sciNotStr = '100 kbp'
+                elif self.orderOfMagnitude == 6:
+                    sciNotStr = ' Mbp'
+                elif self.orderOfMagnitude == 7:
+                    sciNotStr = '10 Mbp'
+                elif self.orderOfMagnitude == 8:
+                    sciNotStr = '100 Mbp'
+                else:
+                    sciNotStr = f'1e{self.orderOfMagnitude}'
+            s = ''.join((sciNotStr, offsetStr))
+
+        return self.fix_minus(s)
 
 
 class GenomeTrackLayerArtist(MatplotlibLayerArtist):
@@ -51,6 +117,10 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
         result.spines['right'].set_visible(False)
         result.spines['top'].set_visible(False)
         viewer_state.tracks[key] = result
+
+        fmt = GenomeTrackFormatter()
+        fmt.set_powerlimits((-3, 3))
+        axes.xaxis.set_major_formatter(fmt)
         return result
 
     def _handle_state_change(self, force=False, **kwargs):
