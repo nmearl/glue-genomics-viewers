@@ -13,6 +13,7 @@ from .state import GenomeTrackLayerState
 
 class GenomeTrackFormatter(ScalarFormatter):
     """Format numbers in kdb/Mbp, instead of scientific notation"""
+    chrom = ''
 
     def format_data(self, value):
         e = math.floor(math.log10(abs(value)))
@@ -73,7 +74,7 @@ class GenomeTrackFormatter(ScalarFormatter):
                     sciNotStr = f'1e{self.orderOfMagnitude}'
             s = ''.join((sciNotStr, offsetStr))
 
-        return self.fix_minus(s)
+        return f'{self.chrom}:{self.fix_minus(s)}'
 
 
 class GenomeTrackLayerArtist(MatplotlibLayerArtist):
@@ -141,6 +142,7 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
 
     def _update_plot_data(self, force=False):
         # Prepare new data
+        self.axes.xaxis.get_major_formatter().chrom = f'chr{self._viewer_state.chr}'
         self._update_artists()
         self._update_visual_attributes()
 
@@ -164,10 +166,11 @@ class GenomeProfileLayerArtist(GenomeTrackLayerArtist):
     def _update_artists(self):
         df: pd.DataFrame = self.state.viz_data
         if df.empty:
-            return
-
-        x = np.vstack([df.start, df.start, df.stop, df.stop]).T.ravel()
-        y = np.vstack([df.value * 0, df.value, df.value, df.value * 0]).T.ravel()
+            x = np.array([])
+            y = np.array([])
+        else:
+            x = np.vstack([df.start, df.start, df.stop, df.stop]).T.ravel()
+            y = np.vstack([df.value * 0, df.value, df.value, df.value * 0]).T.ravel()
 
         if not self.mpl_artists:
             artist = self.track_axes.fill_between(x, y)
@@ -175,7 +178,7 @@ class GenomeProfileLayerArtist(GenomeTrackLayerArtist):
         else:
             self.mpl_artists[-1].set_verts([np.column_stack([x, y])])
 
-        if isinstance(self.layer, Data):
+        if isinstance(self.layer, Data) and x.size > 0:
             self.track_axes.set_ylim(y.min(), y.max())
 
         self.redraw()
