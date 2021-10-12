@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Layout</class>
+ <widget class="QWidget" name="Layout">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>496</width>
+    <height>291</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="1" column="0">
+    <widget class="QLabel" name="layout_label">
+     <property name="text">
+      <string>Layout</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QComboBox" name="combosel_layout">
+     <item>
+      <property name="text">
+       <string>Default</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Circular</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Kamada Kawaii</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Planar</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Spectral</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Spring</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Shell</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
