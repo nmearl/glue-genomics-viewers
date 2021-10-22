@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-import math
-from matplotlib.ticker import ScalarFormatter
 
 from glue.core import Data
 from glue.viewers.matplotlib.layer_artist import MatplotlibLayerArtist
@@ -9,75 +7,10 @@ from glue.utils import defer_draw
 from matplotlib.patches import Arc
 
 from .state import GenomeTrackLayerState
+from .utils import PanTrackerMixin, GenomeTrackFormatter
 
 
-class GenomeTrackFormatter(ScalarFormatter):
-    """Format numbers in kdb/Mbp, instead of scientific notation"""
-    chrom = ''
-
-    def format_data(self, value):
-        e = math.floor(math.log10(abs(value)))
-        s = round(value / 10**e, 10)
-        exponent = self._format_maybe_minus_and_locale("%d", e)
-        if e == 3:
-            suffix = ' kbp'
-        elif e == 4:
-            suffix = ' kbp'
-            s *= 10
-        elif e == 5:
-            suffix = ' kbp'
-            s *= 100
-        elif e == 6:
-            suffix = ' Mbp'
-        elif e == 7:
-            suffix = ' Mbp'
-            s *= 10
-        elif e == 8:
-            suffix = ' Mbp'
-            s *= 100
-        else:
-            suffix = f'e{exponent}'
-
-        significand = self._format_maybe_minus_and_locale(
-            "%d" if s % 1 == 0 else "%1.10f", s)
-        if e == 0:
-            return significand
-        return f"{significand}{suffix}"
-
-    def get_offset(self):
-        if len(self.locs) == 0:
-            return ''
-
-        s = ''
-        if self.orderOfMagnitude or self.offset:
-            offsetStr = ''
-            sciNotStr = ''
-            if self.offset:
-                print(self.offset)
-                offsetStr = self.format_data(self.offset)
-                if self.offset > 0:
-                    offsetStr = '+' + offsetStr
-            if self.orderOfMagnitude:
-                if self.orderOfMagnitude == 3:
-                    sciNotStr = ' kbp'
-                elif self.orderOfMagnitude == 4:
-                    sciNotStr = '10 kbp'
-                elif self.orderOfMagnitude == 5:
-                    sciNotStr = '100 kbp'
-                elif self.orderOfMagnitude == 6:
-                    sciNotStr = ' Mbp'
-                elif self.orderOfMagnitude == 7:
-                    sciNotStr = '10 Mbp'
-                elif self.orderOfMagnitude == 8:
-                    sciNotStr = '100 Mbp'
-                else:
-                    sciNotStr = f'1e{self.orderOfMagnitude}'
-            s = ''.join((sciNotStr, offsetStr))
-
-        return f'{self.chrom}:{self.fix_minus(s)}'
-
-
-class GenomeTrackLayerArtist(MatplotlibLayerArtist):
+class GenomeTrackLayerArtist(MatplotlibLayerArtist, PanTrackerMixin):
     _layer_state_cls = GenomeTrackLayerState
 
     def __init__(self, axes, viewer_state, layer_state=None, layer=None):
@@ -86,6 +19,7 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
         self.track_key = id(layer.data)
         self.track_axes = self._setup_track_axes(axes, self.track_key, viewer_state)
         super().__init__(axes, viewer_state, layer_state=layer_state, layer=layer)
+        self.init_pan_tracking(axes)
 
         # View limits get reset to (0, 1) during setup somewhere, restore.
         viewer_state.x_min = x_min
@@ -96,6 +30,8 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
         self._viewer_state.add_global_callback(self._handle_state_change)
         self.state.add_global_callback(self._handle_state_change)
 
+    def on_pan_end(self):
+        self._handle_state_change(force=True)
 
     @staticmethod
     def _setup_track_axes(axes, key, viewer_state):
@@ -126,6 +62,7 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
 
     def _handle_state_change(self, force=False, **kwargs):
         if (
+            self.panning or
             self._viewer_state.chr is None or
             self._viewer_state.start is None or
             self._viewer_state.end is None or
@@ -225,7 +162,11 @@ class GenomeLoopLayerArtist(GenomeTrackLayerArtist):
             self.mpl_artists.append(arc)
 
         if isinstance(self.layer, Data):
-            self.track_axes.set_ylim(0, df.diameter.max() / 2)
+            self.track_axes.autoscale(axis='y', enable=True)
+            rng = df.diameter.max() / 2
+            domain = self.track_axes.get_xlim()
+            domain = (domain[1] - domain[0]) / 2
+            self.track_axes.set_ylim(0, min(domain, rng))
 
         self.redraw()
 

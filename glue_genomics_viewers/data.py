@@ -186,27 +186,33 @@ class BedPe:
                 ['pairix', '-f', '-s', '1', '-d', '4', '-b', '2', '-e', '3', '-u', '5', '-v', '6', path + '.bgz'])
 
     @staticmethod
-    def _pairix_query(path, gr: GenomeRange, verbose):
+    def _pairix_query(path, gr: GenomeRange, required_endpoints, verbose):
         query = f"{gr.chrom}:{gr.start}-{gr.end}"
+
+        if required_endpoints == 'either':
+            query = [f'{query}|*', f'*|{query}']
+        else:
+            query = [query]
+
         if verbose:
             logger.info("%s %s", path, query)
-        p = Popen(['pairix', '-f', path, query], stdout=PIPE)
+        p = Popen(['pairix', '-f', path, *query], stdout=PIPE)
         for line in p.stdout:
             line = line.decode('utf-8')
             yield line.strip().split('\t')
 
-    def query(self, gr: GenomeRange, target=100, level=None, verbose=True):
+    def query(self, gr: GenomeRange, target=100, required_endpoints='both', level=None, verbose=True):
         last = None
 
         if level is not None:
             path = self._level_path(level) + '.bgz'
-            return pd.DataFrame(self._pairix_query(path, gr, verbose),
+            return pd.DataFrame(self._pairix_query(path, gr, required_endpoints, verbose),
                                 columns=['chrom1', 'start1', 'end1', 'chrom2', 'start2', 'end2', 'value']).apply(
                 pd.to_numeric, errors='ignore')
 
         for level in range(self.depth)[::-1]:
             path = self._level_path(level) + '.bgz'
-            df = pd.DataFrame(self._pairix_query(path, gr, verbose),
+            df = pd.DataFrame(self._pairix_query(path, gr, required_endpoints, verbose),
                               columns=['chrom1', 'start1', 'end1', 'chrom2', 'start2', 'end2', 'value']).apply(
                 pd.to_numeric, errors='ignore')
             if len(df) > target:
@@ -303,12 +309,16 @@ class BedPeData(GenomicData):
     """Glue Data wrapper for BedPe files."""
     engine_cls = BedPe
 
-    def profile(self, chr, start, end, subset_state=None, target=100, **kwargs):
+    def profile(self, chr, start, end, subset_state=None, target=100, required_endpoints='both', **kwargs):
         query_chrom = f'chr{chr}'
         query_start = int(start)
         query_end   = int(end)
-        result = self.engine.query(GenomeRange(query_chrom, query_start, query_end), target=target, verbose=False)
-        #print(len(result))
+        result = self.engine.query(
+            GenomeRange(query_chrom, query_start, query_end),
+            target=target,
+            required_endpoints=required_endpoints,
+            verbose=False
+        )
         if subset_state is None:
             return result
 

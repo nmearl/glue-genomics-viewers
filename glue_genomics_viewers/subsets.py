@@ -21,7 +21,10 @@ class GenomicMulitRangeSubsetState(SubsetState):
             self.chroms.append(subset.chrom)
             self.starts.append(subset.start)
             self.ends.append(subset.end)
-            
+
+    def extent(self):
+        return self.chroms[0], min(self.starts), max(self.ends)
+
     def copy(self):
         return GenomicMulitRangeSubsetState(self._subsets)
             
@@ -58,6 +61,9 @@ class GenomicRangeSubsetState(SubsetState):
         self.chrom = chrom
         self.start = start
         self.end = end
+
+    def extent(self):
+        return self.chrom, self.start, self.end
 
     def copy(self):
         return GenomicRangeSubsetState(self.chrom, self.start, self.end)
