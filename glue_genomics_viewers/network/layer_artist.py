@@ -3,8 +3,6 @@ from glue.viewers.common.layer_artist import LayerArtist
 import numpy as np
 from .state import NetworkLayerState
 import networkx as nx
-from astropy.table import Table
-from matplotlib.collections import PathCollection, LineCollection
 import mplcursors as mplc
 
 RENDER_LAYOUTS = {
@@ -39,12 +37,6 @@ class NetworkLayerArtist(LayerArtist):
         
         nx.Graph(ax=axes)
 
-        self.state.add_callback('fill', self._on_fill_change)
-        self.state.add_callback('visible', self._on_visible_change)
-        self.state.add_callback('zorder', self._on_zorder_change)
-
-        # self._viewer_state.add_callback('x_att', self._on_attribute_change)
-        # self._viewer_state.add_callback('y_att', self._on_attribute_change)
         self._viewer_state.add_callback('layout', self._on_layout_changed)
 
     def path_artist(self, layer):
@@ -57,13 +49,16 @@ class NetworkLayerArtist(LayerArtist):
         G = nx.Graph()
         render_layout = RENDER_LAYOUTS[self._selected_layout]
 
-        index = self.state.layer["index"]
-        chrm = self.state.layer["chrm"]
-        peak = self.state.layer["peak"]
-        corr = self.state.layer["corr"]
+        layer = self.state.layer
+
+        index = layer["index"]
+        chrm = layer["chrm"]
+        peak = layer["peak"]
+        corr = layer["corr"]
 
         for i in range(len(self.state.layer['chrm'])):
             G.add_edge(f"{chrm[i]} {index[i]}", peak[i], strength=corr[i])
+            G.nodes[f"{chrm[i]} {index[i]}"]
         
         d = dict(nx.degree(G))
 
@@ -80,45 +75,46 @@ class NetworkLayerArtist(LayerArtist):
         nx.draw(G, pos=node_positions, ax=self.axes,
                 with_labels=False, width=weights, 
                 node_size=[v * 20 + 20 for v in d.values()], 
-                node_color=['red' if 'index' in n else 'blue' for n in G],
-                edgecolors='black', linewidths=1)
+                node_color=layer.style.color,
+                edgecolors=layer.style.color, 
+                linewidths=layer.style.linewidth, 
+                alpha=layer.style.alpha)
 
-        self.axes.figure.subplots_adjust(bottom=0, top=1, left=0, right=1)
+        self._collection_handler[layer] = {
+            'path' : self.axes.collections[-2],
+            'line': self.axes.collections[-1]}
 
-        crs = mplc.cursor(self.path_artist, hover=2)
+        crs = mplc.cursor(self.path_artist(layer), hover=2)
 
         @crs.connect("add")
         def _node_labels(sel):
-            label = list(G.nodes)[sel.index]
-            sel.annotation.set_text(label)
+            if sel.index < len(G.nodes):
+                label = list(G.nodes)[sel.index]
+                sel.annotation.set_text(label)
 
-    def _on_fill_change(self, value=None):
-        if len(self.axes.collections) == 0:
+    def _on_visual_change(self, value=None):
+        if len(self.axes.collections) == 0 or len(self._collection_handler) == 0:
             return
 
-        if self.state.fill:
-            self.path_artist.set_markerfacecolor(self.state.layer.style.color)
-        else:
-            self.path_artist.set_markerfacecolor('none')
-        self.redraw()
+        layer = self.state.layer
 
-    def _on_visible_change(self, value=None):
-        if len(self.axes.collections) == 0:
-            return
+        self.path_artist(layer).set_visible(self.state.visible)
+        self.line_artist(layer).set_visible(self.state.visible)
 
-        self.path_artist.set_visible(self.state.visible)
-        self.line_artist.set_visible(self.state.visible)
-        self.redraw()
+        for artist in [self.path_artist(layer), self.line_artist(layer)]:
+            artist.set_visible(self.state.visible)
+            artist.set_zorder(self.state.zorder)
 
-    def _on_zorder_change(self, value=None):
-        if len(self.axes.collections) == 0:
-            return
+            artist.set_edgecolor(layer.style.color)
+            artist.set_facecolor(layer.style.color)
+            artist.set_alpha(layer.style.alpha)
 
-        self.path_artist.set_zorder(self.state.zorder)
-        self.line_artist.set_zorder(self.state.zorder)
         self.redraw()
 
     def _on_attribute_change(self, value=None):
+        layer = self.state.layer
+        self._remove_layer(layer)
+
         self._make_graph()
         self.redraw()
 
@@ -132,8 +128,19 @@ class NetworkLayerArtist(LayerArtist):
         if len(self.axes.collections) == 0:
             return
 
-        self.path_artist.set_visible(False)
-        self.line_artist.set_visible(False)
+        layer = self.state.layer
+
+        self.path_artist(layer).set_visible(False)
+        self.line_artist(layer).set_visible(False)
+
+    def _remove_layer(self, layer):
+        if layer not in self._collection_handler:
+            return
+
+        self._collection_handler[layer]['path'].remove()
+        self._collection_handler[layer]['line'].remove()
+
+        del self._collection_handler[layer]
 
     def remove(self):
         for coll in [x for x in self.axes.collections]:
@@ -142,9 +149,11 @@ class NetworkLayerArtist(LayerArtist):
         for txt in [x for x in self.axes.texts]:
             txt.remove()
 
+        self._collection_handler = {}
+
     def redraw(self):
         self.axes.figure.canvas.draw_idle()
 
     def update(self):
-        self._on_fill_change()
         self._on_attribute_change()
+        self._on_visual_change()
