@@ -30,6 +30,23 @@ class NetworkDataViewer(DataViewer):
     def central_widget(self):
         return self.axes.figure
 
+    def apply_roi(self, roi):
+        layer = self.selected_layer
+
+        if isinstance(layer.state.layer, GroupedSubset):
+            return
+
+        positions = np.array(list(layer._viewer_state.node_positions.values()))
+        names = np.array(list(layer._viewer_state.node_positions.keys()))
+        mask = roi.contains(positions[:, 0], positions[:, 1])
+
+        if names[mask].size == 0:
+            return
+
+        true_mask = np.isin(layer.state.layer['peak'], names[mask])
+        subset_state = ElementSubsetState(true_mask, layer.state.layer)
+        self.apply_subset_state(subset_state)
+
     def get_layer_artist(self, cls, layer=None, layer_state=None):
         return cls(self.axes, self.state, layer=layer, layer_state=layer_state)
 
