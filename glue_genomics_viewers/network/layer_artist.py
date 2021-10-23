@@ -26,6 +26,15 @@ class NetworkLayerArtist(LayerArtist):
 
         self.axes = axes
         self.figure = self.axes.figure
+        self.axes.figure.subplots_adjust(bottom=0, top=1, left=0, right=1)
+        self._collection_handler = {}
+
+        self.state.add_callback('visible', self._on_visual_change)
+        self.state.add_callback('zorder', self._on_visual_change)
+
+        self.state.layer.style.add_callback('color', self._on_visual_change)
+        self.state.layer.style.add_callback('alpha', self._on_visual_change)
+
         self._selected_layout = 'spring'
         
         nx.Graph(ax=axes)
