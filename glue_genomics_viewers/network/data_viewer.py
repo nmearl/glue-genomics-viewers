@@ -1,9 +1,9 @@
-from glue.core.subset_group import GroupedSubset
 import matplotlib.pyplot as plt
 import numpy as np
+from glue.core.subset import ElementSubsetState
+from glue.core.subset_group import GroupedSubset
 from glue.viewers.common.qt.data_viewer import DataViewer
 from glue.viewers.common.qt.toolbar import BasicToolbar
-from glue.core.subset import roi_to_subset_state, ElementSubsetState
 
 from .layer_artist import NetworkLayerArtist
 from .qt import NetworkLayerStateWidget, NetworkViewerStateWidget
