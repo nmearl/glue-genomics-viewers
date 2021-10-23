@@ -1,11 +1,15 @@
+from glue.core.subset_group import GroupedSubset
 import matplotlib.pyplot as plt
-from glue.config import qt_client
+import numpy as np
 from glue.viewers.common.qt.data_viewer import DataViewer
+from glue.viewers.common.qt.toolbar import BasicToolbar
+from glue.core.subset import roi_to_subset_state, ElementSubsetState
 
 from .layer_artist import NetworkLayerArtist
 from .qt import NetworkLayerStateWidget, NetworkViewerStateWidget
 from .state import NetworkViewerState
-from glue.viewers.common.qt.toolbar import BasicToolbar
+
+__all__ = ['NetworkDataViewer']
 
 
 class NetworkDataViewer(DataViewer):
@@ -17,11 +21,12 @@ class NetworkDataViewer(DataViewer):
     _options_cls = NetworkViewerStateWidget
     _layer_style_widget_cls = NetworkLayerStateWidget
     _toolbar_cls = BasicToolbar
-    tools = ['select:circle', 'select:polygon', 'select:rectangle', 'mpl:home',
-             'mpl:pan', 'mpl:zoom']
+    tools = ['mpl:home', 'mpl:pan', 'mpl:zoom', 'select:circle', 
+             'select:polygon', 'select:rectangle']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         # Ensure that a new figure object is created upon data viewer creation
         _, self.axes = plt.subplots()
         self.setCentralWidget(self.axes.figure.canvas)
@@ -50,5 +55,3 @@ class NetworkDataViewer(DataViewer):
     def get_layer_artist(self, cls, layer=None, layer_state=None):
         return cls(self.axes, self.state, layer=layer, layer_state=layer_state)
 
-
-qt_client.add(NetworkDataViewer)
