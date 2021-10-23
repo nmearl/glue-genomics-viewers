@@ -47,13 +47,11 @@ class NetworkLayerArtist(LayerArtist):
         # self._viewer_state.add_callback('y_att', self._on_attribute_change)
         self._viewer_state.add_callback('layout', self._on_layout_changed)
 
-    @property
-    def path_artist(self):
-        return self.axes.collections[0]
+    def path_artist(self, layer):
+        return self._collection_handler[layer]['path']
 
-    @property
-    def line_artist(self):
-        return self.axes.collections[1]
+    def line_artist(self, layer):
+        return self._collection_handler[layer]['line']
 
     def _make_graph(self):
         G = nx.Graph()
@@ -71,7 +69,15 @@ class NetworkLayerArtist(LayerArtist):
 
         weights = np.array(list(nx.get_edge_attributes(G, 'strength').values())) * 5
 
-        nx.draw(G, pos=render_layout(G), ax=self.axes, 
+        node_positions = render_layout(G)
+
+        if self._viewer_state.node_positions is None:
+            self._viewer_state.node_positions = node_positions
+        else:
+            node_positions = {k: self._viewer_state.node_positions[k] 
+                              for k in node_positions}
+
+        nx.draw(G, pos=node_positions, ax=self.axes,
                 with_labels=False, width=weights, 
                 node_size=[v * 20 + 20 for v in d.values()], 
                 node_color=['red' if 'index' in n else 'blue' for n in G],
