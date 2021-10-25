@@ -4,13 +4,15 @@ import os
 from echo import delay_callback
 from matplotlib.axes._base import _TransformedBoundsLocator
 import numpy as np
+import pandas as pd
 from glue.core import Subset
 from glue.utils import nonpartial, defer_draw, decorate_all_methods
 from glue.viewers.matplotlib.qt.data_viewer import MatplotlibDataViewer
 import coolbox.api as cb
+from coolbox.utilities.bed import ReadBed
 
 from qtpy import QtWidgets
-from ...data import BedgraphData
+from ...data import BedgraphData, BedGraph, GenomeRange
 from ...subsets import GenomicRangeSubsetState
 
 from .layer_style_editor import GenomeTrackLayerStyleEditor
@@ -18,6 +20,7 @@ from .options_widget import GenomeTrackOptionsWidget
 from ..layer_artist import GenomeProfileLayerArtist, GenomeLoopLayerArtist, GenomeTrackLayerArtist
 from ..state import GenomeTrackState
 from ..utils import PanTrackerMixin
+
 
 __all__ = ['GenomeTrackViewer']
 
@@ -103,7 +106,7 @@ class GenomeTrackViewer(MatplotlibDataViewer, PanTrackerMixin):
         self.annotations_ax = GenomeTrackLayerArtist._setup_track_axes(
             self.axes, 'annotations', self.state)
         self.annotation = cb.BED(
-            os.environ.get('GLUEGENES_GENE_FILE', 'gencodeVM23_bed12.bed'),
+            os.environ.get('GLUEGENES_GENE_FILE', 'gencodeVM23_bed12.bed.bgz'),
             num_rows=None,
             gene_style='simple',
             bed_type='bed12',
@@ -122,13 +125,26 @@ class GenomeTrackViewer(MatplotlibDataViewer, PanTrackerMixin):
             return
 
         self.annotations_ax.clear()
-        start = max(int(self.state.start), 0)
-        end = max(int(self.state.end), 0)
+
+        start = max(int(self.state.start), 1)
+        end = max(int(self.state.end), 1)
         start, end = min(start, end), max(start, end)
+        gr = GenomeRange('chr' + self.state.chr, start, end)
+        intervals = BedGraph._tabix_query(self.annotation.properties['file'], gr)
+
+        if intervals:
+            parsed = list(ReadBed('\t'.join(l) for l in intervals))
+            bed_type = 'bed12'
+            df = self.annotation.intervals2dataframe(parsed, bed_type)
+            df.bed_type = bed_type
+        else:
+            df = pd.DataFrame()
+
         self.annotation.is_draw_labels = True
-        self.annotation.plot(
+        self.annotation.plot_genes(
             self.annotations_ax,
-            cb.GenomeRange(f"{self.state.chr}:{start}-{end}")
+            cb.GenomeRange(f"{self.state.chr}:{start}-{end}"),
+            df
         )
         self.axes.figure.canvas.draw_idle()
 
