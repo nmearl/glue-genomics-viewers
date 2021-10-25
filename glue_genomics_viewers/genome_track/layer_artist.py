@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from matplotlib.axes._axes import _TransformedBoundsLocator
 
 from glue.core import Data
 from glue.viewers.matplotlib.layer_artist import MatplotlibLayerArtist
@@ -8,9 +7,10 @@ from glue.utils import defer_draw
 from matplotlib.patches import Arc
 
 from .state import GenomeTrackLayerState
+from .utils import PanTrackerMixin, GenomeTrackFormatter
 
 
-class GenomeTrackLayerArtist(MatplotlibLayerArtist):
+class GenomeTrackLayerArtist(MatplotlibLayerArtist, PanTrackerMixin):
     _layer_state_cls = GenomeTrackLayerState
 
     def __init__(self, axes, viewer_state, layer_state=None, layer=None):
@@ -19,6 +19,7 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
         self.track_key = id(layer.data)
         self.track_axes = self._setup_track_axes(axes, self.track_key, viewer_state)
         super().__init__(axes, viewer_state, layer_state=layer_state, layer=layer)
+        self.init_pan_tracking(axes)
 
         # View limits get reset to (0, 1) during setup somewhere, restore.
         viewer_state.x_min = x_min
@@ -29,6 +30,8 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
         self._viewer_state.add_global_callback(self._handle_state_change)
         self.state.add_global_callback(self._handle_state_change)
 
+    def on_pan_end(self):
+        self._handle_state_change(force=True)
 
     @staticmethod
     def _setup_track_axes(axes, key, viewer_state):
@@ -51,10 +54,15 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
         result.spines['right'].set_visible(False)
         result.spines['top'].set_visible(False)
         viewer_state.tracks[key] = result
+
+        fmt = GenomeTrackFormatter()
+        fmt.set_powerlimits((-3, 3))
+        axes.xaxis.set_major_formatter(fmt)
         return result
 
     def _handle_state_change(self, force=False, **kwargs):
         if (
+            self.panning or
             self._viewer_state.chr is None or
             self._viewer_state.start is None or
             self._viewer_state.end is None or
@@ -71,6 +79,7 @@ class GenomeTrackLayerArtist(MatplotlibLayerArtist):
 
     def _update_plot_data(self, force=False):
         # Prepare new data
+        self.axes.xaxis.get_major_formatter().chrom = f'chr{self._viewer_state.chr}'
         self._update_artists()
         self._update_visual_attributes()
 
@@ -94,10 +103,11 @@ class GenomeProfileLayerArtist(GenomeTrackLayerArtist):
     def _update_artists(self):
         df: pd.DataFrame = self.state.viz_data
         if df.empty:
-            return
-
-        x = np.vstack([df.start, df.start, df.stop, df.stop]).T.ravel()
-        y = np.vstack([df.value * 0, df.value, df.value, df.value * 0]).T.ravel()
+            x = np.array([])
+            y = np.array([])
+        else:
+            x = np.vstack([df.start, df.start, df.stop, df.stop]).T.ravel()
+            y = np.vstack([df.value * 0, df.value, df.value, df.value * 0]).T.ravel()
 
         if not self.mpl_artists:
             artist = self.track_axes.fill_between(x, y)
@@ -105,7 +115,7 @@ class GenomeProfileLayerArtist(GenomeTrackLayerArtist):
         else:
             self.mpl_artists[-1].set_verts([np.column_stack([x, y])])
 
-        if isinstance(self.layer, Data):
+        if isinstance(self.layer, Data) and x.size > 0:
             self.track_axes.set_ylim(y.min(), y.max())
 
         self.redraw()
@@ -152,7 +162,11 @@ class GenomeLoopLayerArtist(GenomeTrackLayerArtist):
             self.mpl_artists.append(arc)
 
         if isinstance(self.layer, Data):
-            self.track_axes.set_ylim(0, df.diameter.max() / 2)
+            self.track_axes.autoscale(axis='y', enable=True)
+            rng = df.diameter.max() / 2
+            domain = self.track_axes.get_xlim()
+            domain = (domain[1] - domain[0]) / 2
+            self.track_axes.set_ylim(0, min(domain, rng))
 
         self.redraw()
 

@@ -1,9 +1,12 @@
+import os
+
 from glue.core import DataCollection, Data
 from glue.app.qt import GlueApplication
 from ..data import BedgraphData, BedPeData
 import numpy as np
 from glue_genomics_viewers.heatmap.data_viewer import HeatmapViewer
 from glue.viewers.table.qt import TableViewer
+from glue_genomics_viewers.genome_track.qt import GenomeTrackViewer
 from glue_genomics_viewers.heatmap.heatmap_coords import HeatmapCoords
 
 import pandas as pd
@@ -30,16 +33,17 @@ def demo():
 
     setup()
 
-    bedgraph = '/Users/jfoster/Desktop/JAX/TestData/minji/MCF10A_CTCF_ChIA-PET_Rep1_coverage_ENCFF614DRY.chr3.bedgraph'
-    bedpe = '/Users/jfoster/Desktop/JAX/TestData/minji/MCF10A_CTCF_ChIA-PET_Rep1_loops_ENCFF310MTX.chr3.bedpe'
+    base_dir = os.environ.get('GLUEGENES_DEMO_DIR', '/Users/jfoster/Desktop/JAX/TestData')
+    bedgraph = f'{base_dir}/minji/MCF10A_CTCF_ChIA-PET_Rep1_coverage_ENCFF614DRY.chr3.bedgraph'
+    bedpe = f'{base_dir}/minji/MCF10A_CTCF_ChIA-PET_Rep1_loops_ENCFF310MTX.chr3.bedpe'
     #bedgraph = '/Users/jfoster/Desktop/sep17-demo-data/mm10_coverage_M.bedgraph'
-    tadfile = '/Users/jfoster/Desktop/JAX/TestData/atac_rna/Test_TAD.mm10Lifted.bed'
-    tad_data = pd.read_csv(tadfile,names=['chr','start','end','num','name'],sep='\t')
+    tadfile = f'{base_dir}/atac_rna/Test_TAD.mm10Lifted.bed'
+    #tad_data = pd.read_csv(tadfile,names=['chr','start','end','num','name'],sep='\t')
     
-    enhancer_file = '/Users/jfoster/Desktop/JAX/TestData/minji_loops/Enhancers_and_Promoters.bed'
-    enhancer_data = pd.read_csv(enhancer_file,names=['chr','start','end','state'],usecols=['chr','start','end','state'],sep='\t')
-    enhancer_data = enhancer_data[enhancer_data['chr']=='chr3']
-    enhancer_data['major_states'] =  enhancer_data.apply(classify,axis=1)
+    enhancer_file = f'{base_dir}/minji_loops/Enhancers_and_Promoters.bed'
+    #enhancer_data = pd.read_csv(enhancer_file,names=['chr','start','end','state'],usecols=['chr','start','end','state'],sep='\t')
+    #enhancer_data = enhancer_data[enhancer_data['chr']=='chr3']
+    #enhancer_data['major_states'] =  enhancer_data.apply(classify,axis=1)
     #yo = BedgraphData(bedgraph)
     #yo.engine.index()
     
@@ -47,7 +51,7 @@ def demo():
     #yo.engine.index()
 
     
-    df_counts = pd.read_csv('/Users/jfoster/Desktop/JAX/TestData/three_bears/three_bears_liver_rnaseq_matrix_counts.txt', sep='\t')
+    df_counts = pd.read_csv(f'{base_dir}/three_bears/three_bears_liver_rnaseq_matrix_counts.txt', sep='\t')
     counts_data = np.array(df_counts)
     
     gene_numbers = [int(x[7:]) for x in df_counts.index.values]  # Not general
@@ -65,7 +69,7 @@ def demo():
              exp_ids=experiment_array,
              label='gene_expression',
               coords=HeatmapCoords(n_dim=2, x_axis_ticks=exp_labels, y_axis_ticks=gene_labels, labels=['Experiment ID','Gene ID']))
-    df_metadata = pd.read_csv('/Users/jfoster/Desktop/JAX/TestData/three_bears/three_bears_liver_rnaseq_matrix_metadata.txt', sep='\t')#.set_index(metadata_index)
+    df_metadata = pd.read_csv(f'{base_dir}/three_bears/three_bears_liver_rnaseq_matrix_metadata.txt', sep='\t')#.set_index(metadata_index)
     df_metadata.columns = df_metadata.columns.str.lower()  # For consistency
     
     df_metadata['orsam_id'] = [int(x[5:]) for x in df_metadata['barcode']]
@@ -73,7 +77,7 @@ def demo():
     d2 = df_to_data(df_metadata,label='rnaseq_metadata')
 
     
-    df_gene_table = pd.read_csv('/Users/jfoster/Desktop/JAX/TestData/three_bears/three_bears_liver_rnaseq_geneInfo.txt', sep='\t').set_index('gene.id')
+    df_gene_table = pd.read_csv(f'{base_dir}/three_bears/three_bears_liver_rnaseq_geneInfo.txt', sep='\t').set_index('gene.id')
     df_gene_table['gene_ids'] = [int(x[7:]) for x in df_gene_table.index.values]
     df_gene_table['chr'] = 'chr'+df_gene_table['chr'].astype(str)
     df_gene_table['start'] = df_gene_table['start']*100_000
@@ -89,16 +93,22 @@ def demo():
         #BedgraphData(bedgraph,label='Moredata'),
         BedPeData(bedpe,label='CTCF_ChIA-PET_loops'),
     ])
-    dc['Chromatin State'] = enhancer_data
+    #dc['Chromatin State'] = enhancer_data
     ga = GlueApplication(dc)
     dc[0].join_on_key(dc[1],'exp_ids','orsam_id')
     #dc[0].join_on_key(dc[2],'gene_ids','gene_ids')
 
-    scatter = ga.new_data_viewer(HeatmapViewer)
-    scatter.add_data(d1)
+    #scatter = ga.new_data_viewer(HeatmapViewer)
+    #scatter.add_data(d1)
     
-    metadata = ga.new_data_viewer(TableViewer)
-    metadata.add_data(d2)
+    #metadata = ga.new_data_viewer(TableViewer)
+    #metadata.add_data(d2)
+
+    t = ga.new_data_viewer(GenomeTrackViewer)
+    t.add_data(dc[2])
+    t.state.chr = '3'
+    t.state.start = 3828283
+    t.state.end = 3831057
 
     ga.start()
 

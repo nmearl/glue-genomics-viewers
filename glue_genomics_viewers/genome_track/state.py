@@ -24,6 +24,7 @@ class GenomeTrackState(MatplotlibDataViewerState):
     start = DDCProperty(docstring="Left edge of the window")
     end = DDCProperty(docstring="Right edge of the window")
     loop_count = DDCProperty(docstring="Number of loops to display")
+    show_annotations = DDCProperty(default=True, docstring="Show Annotations?")
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -53,6 +54,7 @@ class GenomeTrackState(MatplotlibDataViewerState):
             self.start = self.x_min
             self.end = self.x_max
 
+
 class GenomeTrackLayerState(MatplotlibLayerState):
 
     _cache = None, None
@@ -77,7 +79,6 @@ class GenomeTrackLayerState(MatplotlibLayerState):
 
         
         if isinstance(self.layer, Subset):
-            #print(f"In isinstance: {self.layer.subset_state}")
             data = self.layer.data
             subset_state = self.layer.subset_state
             if not isinstance(subset_state, GenomicRangeSubsetState):
@@ -90,9 +91,8 @@ class GenomeTrackLayerState(MatplotlibLayerState):
         else:
             data = self.layer
             subset_state = None
-        #print(f'final subset_state = {subset_state}')
         if isinstance(data, BedPeData):
-            df = data.profile(chr, start, end, target=loop_count, subset_state=subset_state)
+            df = data.profile(chr, start, end, target=loop_count, required_endpoints='both', subset_state=subset_state)
         else:
             df = data.profile(chr, start, end, subset_state=subset_state)
 
