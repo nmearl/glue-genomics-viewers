@@ -3,8 +3,9 @@ from subprocess import check_call, PIPE, Popen
 import os
 import logging
 
-import numpy as np
 import pandas as pd
+import pypairix
+import tabix
 from glue.core import Data
 
 from .subsets import GenomicRangeSubsetState, GenomicMulitRangeSubsetState
@@ -20,6 +21,12 @@ class GenomeRange:
     chrom: str
     start: int
     end: int
+
+    def __str__(self):
+        if self.start <= self.end:
+            return f"{self.chrom}:{self.start}-{self.end}"
+        else:
+            return f"{self.chrom}:{self.end}-{self.start}"
 
 
 @dataclass
@@ -69,12 +76,14 @@ class BedGraph:
 
     @staticmethod
     def _tabix_query(path, gr: GenomeRange):
-        query = f"{gr.chrom}:{gr.start}-{gr.end}"
+        query = str(gr)
         logger.debug("%s %s", path, query)
-        p = Popen(['tabix', '-f', path, query], stdout=PIPE)
-        for line in p.stdout:
-            line = line.decode('utf-8')
-            yield line.strip().split('\t')
+        try:
+            records = tabix.open(path).querys(query)
+        except tabix.TabixError:
+            return []
+
+        return list(records)
 
     def query(self, gr: GenomeRange, samples: int = 1000):
 
@@ -187,7 +196,7 @@ class BedPe:
 
     @staticmethod
     def _pairix_query(path, gr: GenomeRange, required_endpoints, verbose):
-        query = f"{gr.chrom}:{gr.start}-{gr.end}"
+        query = str(gr)
 
         if required_endpoints == 'either':
             query = [f'{query}|*', f'*|{query}']
@@ -196,10 +205,8 @@ class BedPe:
 
         if verbose:
             logger.info("%s %s", path, query)
-        p = Popen(['pairix', '-f', path, *query], stdout=PIPE)
-        for line in p.stdout:
-            line = line.decode('utf-8')
-            yield line.strip().split('\t')
+
+        return list(pypairix.open(path).querys(*query))
 
     def query(self, gr: GenomeRange, target=100, required_endpoints='both', level=None, verbose=True):
         last = None
