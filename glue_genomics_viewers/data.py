@@ -350,8 +350,8 @@ class BedPeData(GenomicData):
             
             #We could first filter to remove subset_states outside the range entirely
             subset_indices = pd.Series(list(range(len(subset_state.starts)))) #NCLS requires this, though we could do it in the subset object
-            subset_starts = pd.Series(subset_state.starts)
-            subset_ends = pd.Series(subset_state.ends)
+            subset_starts = pd.Series(subset_state.starts).astype('int')
+            subset_ends = pd.Series(subset_state.ends).astype('int')
             
             l_idxs_1, r_idxs_1 = ncls1.all_overlaps_both(subset_starts.values, subset_ends.values, subset_indices.values)
             l_idxs_2, r_idxs_2 = ncls2.all_overlaps_both(subset_starts.values, subset_ends.values, subset_indices.values)
