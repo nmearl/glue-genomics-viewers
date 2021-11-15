@@ -4,6 +4,7 @@ from glue.core.subset import ElementSubsetState
 from glue.core.subset_group import GroupedSubset
 from glue.viewers.common.qt.data_viewer import DataViewer
 from glue.viewers.common.qt.toolbar import BasicToolbar
+from glue.core.edit_subset_mode import ReplaceMode
 
 from .layer_artist import NetworkLayerArtist
 from .qt import NetworkLayerStateWidget, NetworkViewerStateWidget
@@ -38,7 +39,8 @@ class NetworkDataViewer(DataViewer):
     def apply_roi(self, roi):
         layer = self.selected_layer
 
-        if isinstance(layer.state.layer, GroupedSubset):
+        if (isinstance(layer.state.layer, GroupedSubset) or 
+            layer._viewer_state.node_positions is None):
             return
 
         positions = np.array(list(layer._viewer_state.node_positions.values()))
@@ -50,8 +52,14 @@ class NetworkDataViewer(DataViewer):
 
         true_mask = np.isin(layer.state.layer['peak'], names[mask])
         subset_state = ElementSubsetState(true_mask, layer.state.layer)
-        self.apply_subset_state(subset_state)
+        # subset_state = CategorySubsetState('peak', )
+        self.apply_subset_state(subset_state, 
+            override_mode=self.session.edit_subset_mode.mode)
 
     def get_layer_artist(self, cls, layer=None, layer_state=None):
         return cls(self.axes, self.state, layer=layer, layer_state=layer_state)
+
+    def remove_layer(self, *args, **kwargs):
+        super().remove_layer(*args, **kwargs)
+        print("REMOVED LAYERS!")
 
