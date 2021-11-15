@@ -1,3 +1,4 @@
+from platform import node
 from glue.viewers.common.layer_artist import LayerArtist
 
 import numpy as np
@@ -6,7 +7,7 @@ import networkx as nx
 import mplcursors as mplc
 
 RENDER_LAYOUTS = {
-    'spring': lambda x: nx.spring_layout(x, iterations=30),
+    'spring': lambda x: nx.spring_layout(x, iterations=20),
     'circular': nx.circular_layout,
     'kamada kawaii': nx.kamada_kawai_layout,
     'planar': nx.planar_layout,
@@ -45,7 +46,7 @@ class NetworkLayerArtist(LayerArtist):
     def line_artist(self, layer):
         return self._collection_handler[layer]['line']
 
-    def _make_graph(self):
+    def _make_graph(self, reset=False):
         G = nx.Graph()
         render_layout = RENDER_LAYOUTS[self._selected_layout]
 
@@ -65,14 +66,16 @@ class NetworkLayerArtist(LayerArtist):
         weights = np.array(list(nx.get_edge_attributes(G, 'strength').values())) * 5
 
         node_positions = render_layout(G)
+        # self._viewer_state.node_positions = render_layout(G)
 
-        if self._viewer_state.node_positions is None:
+        if self._viewer_state.node_positions is None or reset:
             self._viewer_state.node_positions = node_positions
         else:
             node_positions = {k: self._viewer_state.node_positions[k] 
                               for k in node_positions}
+            self._viewer_state.node_positions = node_positions
 
-        nx.draw(G, pos=node_positions, ax=self.axes,
+        nx.draw(G, pos=self._viewer_state.node_positions, ax=self.axes,
                 with_labels=False, width=weights, 
                 node_size=[v * 20 + 20 for v in d.values()], 
                 node_color=layer.style.color,
@@ -121,7 +124,7 @@ class NetworkLayerArtist(LayerArtist):
     def _on_layout_changed(self, layout):
         self._selected_layout = layout.lower()
         self.remove()
-        self._make_graph()
+        self._make_graph(reset=True)
         self.redraw()
 
     def clear(self):
